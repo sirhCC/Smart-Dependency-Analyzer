@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Smart Dependency Analyzer CLI Entry Point
- * The world's most advanced dependency analysis platform
+ * Enterprise-grade dependency analysis with security and license intelligence
  */
-export {};
+declare function main(): Promise<void>;
+export { main };
 //# sourceMappingURL=index.d.ts.map

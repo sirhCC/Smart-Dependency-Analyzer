@@ -571,3 +571,6 @@ export interface SecurityDataSource {
   getVulnerabilities(pkg: Package): Promise<Vulnerability[]>;
   isAvailable(): Promise<boolean>;
 }
+
+// License Intelligence Types
+export * from './license';

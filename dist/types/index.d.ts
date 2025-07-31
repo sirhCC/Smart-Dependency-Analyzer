@@ -510,4 +510,5 @@ export interface SecurityDataSource {
     getVulnerabilities(pkg: Package): Promise<Vulnerability[]>;
     isAvailable(): Promise<boolean>;
 }
+export * from './license';
 //# sourceMappingURL=index.d.ts.map
