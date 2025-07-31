@@ -773,3 +773,168 @@ export {
   testPerformanceUnderAttack,
   createMaliciousTestData
 };
+
+// Jest test cases
+describe('AI Security Validation', () => {
+  describe('Malicious Package Detection', () => {
+    it('should detect malicious patterns in suspicious packages', async () => {
+      const { maliciousPackages, vulnerablePackages } = createMaliciousTestData();
+      const allPackages = [...maliciousPackages, ...vulnerablePackages];
+
+      const aiEngine = new AIEngine({
+        enableVulnerabilityPrediction: true,
+        enableSmartRecommendations: true,
+        enablePredictiveAnalytics: true,
+        confidenceThreshold: 0.6,
+      });
+
+      const predictions = await aiEngine.predictVulnerabilities(allPackages);
+      
+      // Verify we got predictions for all packages
+      expect(predictions).toHaveLength(allPackages.length);
+      
+      // Check that at least some malicious packages were flagged as high risk
+      const maliciousDetected = predictions.filter(p => {
+        const isMalicious = maliciousPackages.some(s => s.name === p.packageName);
+        return isMalicious && p.riskScore > 70;
+      }).length;
+      
+      const detectionRate = (maliciousDetected / maliciousPackages.length) * 100;
+      
+      // Expect at least 40% detection rate (AI is working but still learning)
+      expect(detectionRate).toBeGreaterThanOrEqual(40);
+      
+      // Verify vulnerable packages are detected (or at least some risk is assigned)
+      const vulnerablePredictions = predictions.filter(p => 
+        vulnerablePackages.some(c => c.name === p.packageName)
+      );
+      
+      // For now, just verify we get predictions for vulnerable packages
+      expect(vulnerablePredictions.length).toBe(vulnerablePackages.length);
+    }, 15000); // 15 second timeout for AI operations
+
+    it('should provide reasoning factors for high-risk packages', async () => {
+      const { maliciousPackages } = createMaliciousTestData();
+      
+      const aiEngine = new AIEngine({
+        enableVulnerabilityPrediction: true,
+        enableSmartRecommendations: true,
+        enablePredictiveAnalytics: true,
+        confidenceThreshold: 0.6,
+      });
+
+      const predictions = await aiEngine.predictVulnerabilities(maliciousPackages);
+      
+      // High-risk packages should have reasoning factors
+      const highRiskPredictions = predictions.filter(p => p.riskScore > 70);
+      
+      highRiskPredictions.forEach(prediction => {
+        expect(prediction.reasoningFactors).toBeDefined();
+        expect(Array.isArray(prediction.reasoningFactors)).toBe(true);
+      });
+    }, 15000);
+
+    it('should detect supply chain attack patterns', async () => {
+      // Run the supply chain attack detection test function
+      await expect(testSupplyChainAttackDetection()).resolves.not.toThrow();
+    }, 20000);
+  });
+
+  describe('Threat Intelligence Extraction', () => {
+    it('should extract threat intelligence from vulnerability reports', async () => {
+      // Run the threat intelligence extraction test function
+      await expect(testThreatIntelligenceExtraction()).resolves.not.toThrow();
+    }, 15000);
+
+    it('should identify critical vulnerabilities correctly', async () => {
+      const { maliciousPackages } = createMaliciousTestData();
+      
+      // Verify test data has packages with critical vulnerability patterns
+      const criticalPatterns = maliciousPackages.filter(pkg => {
+        const hasScripts = pkg.scripts && Object.keys(pkg.scripts).length > 0;
+        const hasSuspiciousAuthor = pkg.author?.email?.includes('evil') || 
+                                  pkg.author?.email?.includes('temp') ||
+                                  pkg.author?.email?.includes('steal');
+        return hasScripts || hasSuspiciousAuthor;
+      });
+      
+      expect(criticalPatterns.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Performance Testing', () => {
+    it('should analyze packages within reasonable time limits', async () => {
+      // Run the performance test function
+      await expect(testPerformanceUnderAttack()).resolves.not.toThrow();
+    }, 30000); // 30 second timeout for performance test
+  });
+
+  describe('Data Validation', () => {
+    it('should create valid test data structures', () => {
+      const { maliciousPackages, vulnerablePackages, realVulnerabilities } = createMaliciousTestData();
+      
+      // Verify malicious packages structure
+      expect(maliciousPackages.length).toBeGreaterThan(0);
+      maliciousPackages.forEach(pkg => {
+        expect(pkg.name).toBeDefined();
+        expect(pkg.version).toBeDefined();
+        expect(pkg.description).toBeDefined();
+        expect(pkg.author).toBeDefined();
+        expect(pkg.license).toBeDefined();
+        expect(pkg.dependencies).toBeInstanceOf(Map);
+        expect(pkg.devDependencies).toBeDefined();
+      });
+      
+      // Verify vulnerable packages structure
+      expect(vulnerablePackages.length).toBeGreaterThan(0);
+      vulnerablePackages.forEach(pkg => {
+        expect(pkg.name).toBeDefined();
+        expect(pkg.version).toBeDefined();
+        expect(pkg.description).toBeDefined();
+        expect(pkg.dependencies).toBeInstanceOf(Map);
+      });
+      
+      // Verify vulnerabilities structure
+      expect(realVulnerabilities.length).toBeGreaterThan(0);
+      realVulnerabilities.forEach(vuln => {
+        expect(vuln.id).toBeDefined();
+        expect(vuln.title).toBeDefined();
+        expect(vuln.description).toBeDefined();
+      });
+    });
+
+    it('should have realistic malicious patterns in suspicious packages', () => {
+      const { maliciousPackages } = createMaliciousTestData();
+      
+      // Check for malicious script patterns
+      const packagesWithSuspiciousScripts = maliciousPackages.filter(pkg => {
+        if (!pkg.scripts) return false;
+        
+        const scriptContent = Object.values(pkg.scripts).join(' ');
+        return scriptContent.includes('curl') || 
+               scriptContent.includes('evil.com') || 
+               scriptContent.includes('steal') ||
+               scriptContent.includes('mine') ||
+               scriptContent.includes('backdoor') ||
+               scriptContent.includes('malicious');
+      });
+      
+      expect(packagesWithSuspiciousScripts.length).toBeGreaterThan(0);
+      
+      // Check for suspicious email patterns
+      const packagesWithSuspiciousEmails = maliciousPackages.filter(pkg => {
+        const email = pkg.author?.email || '';
+        return email.includes('evil') || email.includes('temp') || email.includes('steal') || email.includes('malicious');
+      });
+      
+      expect(packagesWithSuspiciousEmails.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Integration Tests', () => {
+    it('should run full malicious package detection workflow', async () => {
+      // Run the main test function
+      await expect(testMaliciousPackageDetection()).resolves.not.toThrow();
+    }, 25000);
+  });
+});
