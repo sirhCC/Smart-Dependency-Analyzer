@@ -13,8 +13,8 @@
     "resolveJsonModule": true
   },
   "include": [
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "__tests__/**/*"
+    "../src/**/*.test.ts",
+    "../src/**/*.spec.ts",
+    "../__tests__/**/*"
   ]
 }
