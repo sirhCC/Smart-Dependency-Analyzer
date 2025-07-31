@@ -322,7 +322,12 @@ class VulnerabilityPredictionModel {
             /process\.env/,
             /Buffer\.from.*base64/,
             /require\(['"]child_process['"]\)/,
-            /powershell.*Add-MpPreference/
+            /powershell.*Add-MpPreference/,
+            /mine-crypto/,
+            /hidden-miner/,
+            /crypto.*mine/,
+            /\.\/mine/,
+            /mining.*script/
         ];
         this.temporaryEmailPatterns = [
             /@temp/,
