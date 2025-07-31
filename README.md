@@ -12,7 +12,7 @@
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square)](https://github.com/sirhCC/smart-dependency-analyzer)
 [![Coverage](https://img.shields.io/badge/Coverage-90%25-brightgreen?style=flat-square)](https://github.com/sirhCC/smart-dependency-analyzer)
 
-*Revolutionizing dependency analysis with AI-powered security intelligence, comprehensive license compliance, and enterprise-grade reporting.*
+*Revolutionizing dependency analysis with ML-powered security intelligence, comprehensive license compliance, and enterprise-grade reporting.*
 
 [🚀 **Quick Start**](#-quick-start) • [📖 **Documentation**](#-documentation) • [🏢 **Enterprise Features**](#-enterprise-features) • [🔧 **CLI Reference**](#-cli-reference)
 
@@ -413,7 +413,7 @@ sda analyze packages/api --include-dev
 ## 🚧 **Roadmap**
 
 ### **🎯 Version 2.0 (Q4 2025)**
-- 🤖 **AI-Powered Risk Prediction**: Machine learning models for proactive threat detection
+- 🤖 **ML-Powered Risk Prediction**: Machine learning models for proactive threat detection
 - 🌐 **Web Dashboard**: Real-time monitoring and management interface
 - 📱 **Mobile App**: On-the-go dependency monitoring
 - 🔗 **Advanced Integrations**: Deeper CI/CD and enterprise tool integration
