@@ -35,7 +35,7 @@ In today's complex software ecosystem, managing dependencies isn't just about fu
 - Reactive security approach
 
 ✅ Smart Dependency Analyzer:
-+ AI-powered threat intelligence
++ ML-powered threat intelligence
 + Comprehensive license compliance
 + Proactive risk management
 + Enterprise policy enforcement
