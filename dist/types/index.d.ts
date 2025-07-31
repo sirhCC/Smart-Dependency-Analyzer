@@ -2,6 +2,8 @@
  * Core type definitions for Smart Dependency Analyzer
  * Enterprise-grade type safety with comprehensive domain modeling
  */
+export type DependencyType = 'production' | 'development' | 'peer' | 'optional' | 'bundled';
+export type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun';
 export interface Package {
     readonly name: string;
     readonly version: string;
@@ -12,7 +14,7 @@ export interface Package {
     readonly author?: PackageAuthor;
     readonly maintainers?: PackageAuthor[];
     readonly keywords?: string[];
-    readonly dependencies?: Record<string, string>;
+    readonly dependencies?: Map<string, DependencyInfo>;
     readonly devDependencies?: Record<string, string>;
     readonly peerDependencies?: Record<string, string>;
     readonly optionalDependencies?: Record<string, string>;
@@ -25,6 +27,24 @@ export interface Package {
     readonly fileSize?: number;
     readonly shasum?: string;
     readonly integrity?: string;
+    readonly path?: string;
+    readonly packageJson?: any;
+    readonly isPrivate?: boolean;
+    readonly workspaceRoot?: string;
+    readonly scripts?: Record<string, string>;
+    readonly deprecated?: boolean;
+    readonly lastModified?: Date;
+    readonly registryUrl?: string;
+    readonly tarballUrl?: string;
+    readonly bugs?: any;
+}
+export interface DependencyInfo {
+    readonly name: string;
+    readonly version: string;
+    readonly type: DependencyType;
+    readonly resolved: boolean;
+    readonly integrity?: string;
+    readonly from?: string;
 }
 export interface PackageRepository {
     readonly type: string;
@@ -62,6 +82,7 @@ export interface Vulnerability {
     readonly exploitabilityScore?: number;
     readonly impactScore?: number;
     readonly source: VulnerabilitySource;
+    readonly patched?: boolean;
 }
 export declare enum VulnerabilitySeverity {
     LOW = "low",
@@ -388,5 +409,105 @@ export interface PolicyAction {
     readonly type: 'allow' | 'warn' | 'fail';
     readonly message?: string;
     readonly notify?: boolean;
+}
+export interface PackageDiscoveryOptions {
+    readonly includeDev?: boolean;
+    readonly includeOptional?: boolean;
+    readonly includePeer?: boolean;
+    readonly maxDepth?: number;
+    readonly ignorePatterns?: string[];
+    readonly registryUrl?: string;
+}
+export interface PackageDiscoveryResult {
+    readonly packages: Package[];
+    readonly projectInfo: ProjectInfo;
+    readonly dependencyGraph: DependencyGraph;
+    readonly statistics: DiscoveryStatistics;
+}
+export interface ProjectInfo {
+    readonly packageManager: PackageManager;
+    readonly isMonorepo: boolean;
+    readonly workspaces: string[];
+    readonly lockFileInfo: LockFileInfo | null;
+    readonly rootPath: string;
+}
+export interface LockFileInfo {
+    readonly path: string;
+    readonly type: PackageManager;
+    readonly exists: boolean;
+    readonly version?: string;
+}
+export interface DependencyGraph {
+    readonly nodes: Array<{
+        id: string;
+        label: string;
+        type: DependencyType;
+    }>;
+    readonly edges: Array<{
+        from: string;
+        to: string;
+        type: DependencyType;
+    }>;
+}
+export interface DiscoveryStatistics {
+    readonly totalPackages: number;
+    readonly directDependencies: number;
+    readonly devDependencies: number;
+    readonly peerDependencies: number;
+    readonly optionalDependencies: number;
+    readonly discoveryTimeMs: number;
+}
+export interface VulnerabilityReport {
+    readonly package: Package;
+    readonly vulnerabilities: Vulnerability[];
+    readonly riskScore: number;
+    readonly riskLevel: 'low' | 'medium' | 'high' | 'critical';
+    readonly riskFactors: Array<{
+        factor: string;
+        impact: number;
+        description: string;
+    }>;
+    readonly recommendations: Array<{
+        type: 'update' | 'replace' | 'remove' | 'monitor';
+        priority: 'high' | 'medium' | 'low';
+        description: string;
+        action: string;
+    }>;
+    readonly scanMetadata: VulnerabilityScanMetadata;
+}
+export interface VulnerabilityScanOptions {
+    readonly includeDevDependencies?: boolean;
+    readonly severityThreshold?: VulnerabilitySeverity;
+    readonly maxAge?: number;
+    readonly ignoreIds?: string[];
+    readonly onlyProduction?: boolean;
+}
+export interface VulnerabilityScanResult {
+    readonly reports: VulnerabilityReport[];
+    readonly summary: {
+        readonly totalPackages: number;
+        readonly scannedPackages: number;
+        readonly totalVulnerabilities: number;
+        readonly criticalVulnerabilities: number;
+        readonly highVulnerabilities: number;
+        readonly mediumVulnerabilities: number;
+        readonly lowVulnerabilities: number;
+        readonly packagesWithVulnerabilities: number;
+        readonly averageRiskScore: number;
+    };
+    readonly scanMetadata: VulnerabilityScanMetadata;
+}
+export interface VulnerabilityScanMetadata {
+    readonly scanTime: Date;
+    readonly scanDurationMs: number;
+    readonly dataSourcesUsed: string[];
+    readonly scanOptions: VulnerabilityScanOptions;
+}
+export interface SecurityDataSource {
+    readonly name: string;
+    readonly description: string;
+    readonly priority: number;
+    getVulnerabilities(pkg: Package): Promise<Vulnerability[]>;
+    isAvailable(): Promise<boolean>;
 }
 //# sourceMappingURL=index.d.ts.map

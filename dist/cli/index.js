@@ -12,6 +12,9 @@ const commander_1 = require("commander");
 const chalk_1 = __importDefault(require("chalk"));
 const package_json_1 = require("../../package.json");
 const logger_1 = require("../utils/logger");
+const package_discovery_1 = require("../core/services/package-discovery");
+const vulnerability_scanner_1 = require("../core/services/vulnerability-scanner");
+const github_advisory_1 = require("../integrations/security/github-advisory");
 const logger = logger_1.Logger.getLogger('CLI');
 async function main() {
     const program = new commander_1.Command();
@@ -27,7 +30,7 @@ async function main() {
         .option('-v, --verbose', 'Enable verbose logging', false)
         .option('--config <path>', 'Path to configuration file')
         .option('--no-color', 'Disable colored output');
-    // Analyze command - Phase 1 MVP
+    // Analyze command - Phase 2 Implementation
     program
         .command('analyze')
         .description('Analyze project dependencies for security and compliance')
@@ -38,15 +41,80 @@ async function main() {
         .action(async (projectPath, options) => {
         try {
             logger.info(`🔍 Analyzing dependencies in: ${projectPath}`);
-            // TODO: Phase 1 implementation
-            console.log(chalk_1.default.green('✅ Analysis complete! (Phase 1 MVP coming soon)'));
-            console.log(chalk_1.default.blue(`📊 Project: ${projectPath}`));
-            console.log(chalk_1.default.yellow(`⚙️  Output format: ${options.output}`));
+            console.log(chalk_1.default.blue('🚀 Smart Dependency Analyzer - Phase 2'));
+            console.log(chalk_1.default.gray('━'.repeat(50)));
+            // Phase 1: Package Discovery
+            console.log(chalk_1.default.yellow('📦 Phase 1: Discovering packages...'));
+            const packageDiscovery = (0, package_discovery_1.createPackageDiscoveryService)();
+            const discoveryResult = await packageDiscovery.discoverPackages(projectPath, {
+                includeDev: options.includeDev
+            });
+            console.log(chalk_1.default.green(`✅ Found ${discoveryResult.packages.length} packages`));
+            console.log(chalk_1.default.cyan(`   📊 Project type: ${discoveryResult.projectInfo.packageManager}`));
+            console.log(chalk_1.default.cyan(`   🏗️  Monorepo: ${discoveryResult.projectInfo.isMonorepo ? 'Yes' : 'No'}`));
+            console.log(chalk_1.default.cyan(`   📈 Dependencies: ${discoveryResult.statistics.directDependencies} production, ${discoveryResult.statistics.devDependencies} dev`));
+            // Phase 2: Vulnerability Scanning
+            console.log(chalk_1.default.yellow('\n🛡️  Phase 2: Scanning for vulnerabilities...'));
+            const githubSource = (0, github_advisory_1.createGitHubAdvisoryDataSource)({
+                ecosystem: 'npm'
+            });
+            const scanner = (0, vulnerability_scanner_1.createVulnerabilityScanner)([githubSource]);
+            const scanResult = await scanner.scanPackages(discoveryResult.packages, {
+                includeDevDependencies: options.includeDev
+            });
+            // Display results
+            console.log(chalk_1.default.green(`✅ Vulnerability scan completed`));
+            console.log(chalk_1.default.cyan(`   📊 Scanned: ${scanResult.summary.scannedPackages}/${scanResult.summary.totalPackages} packages`));
+            console.log(chalk_1.default.cyan(`   🚨 Total vulnerabilities: ${scanResult.summary.totalVulnerabilities}`));
+            if (scanResult.summary.criticalVulnerabilities > 0) {
+                console.log(chalk_1.default.red(`   💥 Critical: ${scanResult.summary.criticalVulnerabilities}`));
+            }
+            if (scanResult.summary.highVulnerabilities > 0) {
+                console.log(chalk_1.default.magenta(`   ⚠️  High: ${scanResult.summary.highVulnerabilities}`));
+            }
+            if (scanResult.summary.mediumVulnerabilities > 0) {
+                console.log(chalk_1.default.yellow(`   📢 Medium: ${scanResult.summary.mediumVulnerabilities}`));
+            }
+            if (scanResult.summary.lowVulnerabilities > 0) {
+                console.log(chalk_1.default.blue(`   ℹ️  Low: ${scanResult.summary.lowVulnerabilities}`));
+            }
+            console.log(chalk_1.default.cyan(`   🎯 Average risk score: ${scanResult.summary.averageRiskScore.toFixed(1)}`));
+            // Show packages with vulnerabilities
+            const packagesWithVulns = scanResult.reports.filter(r => r.vulnerabilities.length > 0);
+            if (packagesWithVulns.length > 0) {
+                console.log(chalk_1.default.yellow(`\n� Packages with vulnerabilities:`));
+                for (const report of packagesWithVulns.slice(0, 5)) { // Show top 5
+                    const criticalCount = report.vulnerabilities.filter(v => v.severity === 'critical').length;
+                    const highCount = report.vulnerabilities.filter(v => v.severity === 'high').length;
+                    let severityBadge = '';
+                    if (criticalCount > 0)
+                        severityBadge = chalk_1.default.red(`💥 ${criticalCount} critical`);
+                    else if (highCount > 0)
+                        severityBadge = chalk_1.default.magenta(`⚠️  ${highCount} high`);
+                    else
+                        severityBadge = chalk_1.default.yellow(`📢 ${report.vulnerabilities.length} total`);
+                    console.log(`   ${chalk_1.default.cyan(report.package.name)}@${chalk_1.default.gray(report.package.version)} - ${severityBadge} - Risk: ${report.riskScore}`);
+                }
+                if (packagesWithVulns.length > 5) {
+                    console.log(chalk_1.default.gray(`   ... and ${packagesWithVulns.length - 5} more packages`));
+                }
+            }
+            else {
+                console.log(chalk_1.default.green('\n🎉 No vulnerabilities found! Your dependencies look secure.'));
+            }
+            console.log(chalk_1.default.gray('\n━'.repeat(50)));
+            console.log(chalk_1.default.blue(`📊 Analysis completed in ${Date.now() - Date.now()}ms`));
+            console.log(chalk_1.default.blue(`⚙️  Output format: ${options.output}`));
             console.log(chalk_1.default.cyan(`🔧 Include dev deps: ${options.includeDev}`));
             console.log(chalk_1.default.magenta(`⚠️  Min severity: ${options.severity}`));
+            if (scanResult.summary.criticalVulnerabilities > 0 || scanResult.summary.highVulnerabilities > 0) {
+                console.log(chalk_1.default.red('\n⚠️  WARNING: Critical or high severity vulnerabilities found!'));
+                console.log(chalk_1.default.yellow('Run with --output json for detailed remediation steps.'));
+            }
         }
         catch (error) {
             logger.error('Analysis failed:', error);
+            console.error(chalk_1.default.red(`❌ Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`));
             process.exit(1);
         }
     });
