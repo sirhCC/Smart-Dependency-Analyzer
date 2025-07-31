@@ -303,17 +303,18 @@ async function testMaliciousPackageDetection(): Promise<void> {
     confidenceThreshold: 0.6, // Lower threshold to catch more suspicious activity
   });
 
-  const nlpEngine = new NLPEngine({
-    enableLicenseAnalysis: true,
-    enableDocumentationAnalysis: true,
-    enableThreatIntelligence: true,
-    sentimentThreshold: -0.3, // Detect negative sentiment
-    models: {
-      licenseClassifier: 'advanced-license-detector',
-      sentimentAnalyzer: 'threat-aware-sentiment',
-      threatExtractor: 'malware-pattern-detector'
-    }
-  });
+  // Commented out for now to avoid unused variable error
+  // const nlpEngine = new NLPEngine({
+  //   enableLicenseAnalysis: true,
+  //   enableDocumentationAnalysis: true,
+  //   enableThreatIntelligence: true,
+  //   sentimentThreshold: -0.3,
+  //   models: {
+  //     licenseClassifier: 'advanced-license-detector',
+  //     sentimentAnalyzer: 'threat-aware-sentiment',
+  //     threatExtractor: 'malware-pattern-detector'
+  //   }
+  // });
 
   console.log('🎯 Testing detection of known malicious packages...\n');
 
@@ -325,7 +326,7 @@ async function testMaliciousPackageDetection(): Promise<void> {
       // AI Engine Analysis
       const vulnPredictions = await aiEngine.predictVulnerabilities([pkg]);
       const recommendations = await aiEngine.generateRecommendations([pkg]);
-      const analytics = await aiEngine.performPredictiveAnalytics([pkg]);
+      await aiEngine.performPredictiveAnalytics([pkg]);
 
       const prediction = vulnPredictions[0];
       if (prediction) {
@@ -428,7 +429,7 @@ async function testMaliciousPackageDetection(): Promise<void> {
         
         // Find matching real vulnerability
         const matchingVuln = realVulnerabilities.find(v => 
-          v.affectedVersions.some(range => pkg.version && range.includes(pkg.version.split('.')[0]))
+          v.affectedVersions.some(range => pkg.version && range.includes(pkg.version?.split('.')[0] || ''))
         );
         
         if (matchingVuln) {
@@ -563,28 +564,28 @@ async function testSupplyChainAttackDetection(): Promise<void> {
  * Calculate Levenshtein distance for typosquatting detection
  */
 function levenshteinDistance(str1: string, str2: string): number {
-  const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+  const matrix: number[][] = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(0));
 
   for (let i = 0; i <= str1.length; i += 1) {
-    matrix[0][i] = i;
+    matrix[0]![i] = i;
   }
 
   for (let j = 0; j <= str2.length; j += 1) {
-    matrix[j][0] = j;
+    matrix[j]![0] = j;
   }
 
   for (let j = 1; j <= str2.length; j += 1) {
     for (let i = 1; i <= str1.length; i += 1) {
       const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1, // deletion
-        matrix[j - 1][i] + 1, // insertion
-        matrix[j - 1][i - 1] + indicator // substitution
+      matrix[j]![i] = Math.min(
+        matrix[j]![i - 1]! + 1, // deletion
+        matrix[j - 1]![i]! + 1, // insertion
+        matrix[j - 1]![i - 1]! + indicator // substitution
       );
     }
   }
 
-  return matrix[str2.length][str1.length];
+  return matrix[str2.length]![str1.length]!;
 }
 
 /**

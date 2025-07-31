@@ -53,16 +53,15 @@ function createMaliciousTestData() {
             author: { name: 'dominictarr', email: 'dominic.tarr@gmail.com' },
             license: 'MIT',
             dependencies: new Map([
-                ['flatmap-stream', '0.1.1'], // The malicious dependency
-                ['through', '^2.3.1'],
-                ['split', '^0.3.0']
+                ['flatmap-stream', { name: 'flatmap-stream', version: '0.1.1', type: 'production', resolved: true }],
+                ['through', { name: 'through', version: '^2.3.1', type: 'production', resolved: true }],
+                ['split', { name: 'split', version: '^0.3.0', type: 'production', resolved: true }]
             ]),
             devDependencies: {},
             scripts: {},
             repository: { type: 'git', url: 'https://github.com/dominictarr/event-stream.git' },
             downloadCount: 2000000, // Extremely popular package
             publishedAt: new Date('2018-09-01'),
-            updatedAt: new Date('2018-11-26'), // Backdoor added in November
             maintainers: [
                 { name: 'dominictarr', email: 'dominic.tarr@gmail.com' },
                 { name: 'right9ctrl', email: 'new@temp.com' } // Suspicious new maintainer
@@ -84,7 +83,6 @@ function createMaliciousTestData() {
             repository: { type: 'git', url: 'https://github.com/faisalman/ua-parser-js.git' },
             downloadCount: 7000000, // Massive popularity
             publishedAt: new Date('2021-10-22'),
-            updatedAt: new Date('2021-10-22'),
             maintainers: [{ name: 'faisalman', email: 'fyzlman@gmail.com' }],
             keywords: ['user-agent', 'parser', 'browser', 'detection']
         },
@@ -95,8 +93,8 @@ function createMaliciousTestData() {
             author: { name: 'attacker', email: 'steal@credentials.com' },
             license: 'ISC',
             dependencies: new Map([
-                ['axios', '^0.21.0'],
-                ['node-fetch', '^2.6.0']
+                ['axios', { name: 'axios', version: '^0.21.0', type: 'production', resolved: true }],
+                ['node-fetch', { name: 'node-fetch', version: '^2.6.0', type: 'production', resolved: true }]
             ]),
             devDependencies: {},
             scripts: {
@@ -105,7 +103,6 @@ function createMaliciousTestData() {
             repository: { type: 'git', url: 'https://github.com/attacker/noblox.js-proxy.git' },
             downloadCount: 1250,
             publishedAt: new Date('2023-06-10'),
-            updatedAt: new Date('2023-06-10'),
             maintainers: [{ name: 'new-account-2023', email: 'temp@10minutemail.com' }],
             keywords: ['roblox', 'noblox', 'api', 'gaming']
         },
@@ -116,9 +113,9 @@ function createMaliciousTestData() {
             author: { name: 'discord-hacker', email: 'tokens@steal.com' },
             license: 'UNLICENSED',
             dependencies: new Map([
-                ['discord.js', '^13.0.0'],
-                ['ws', '^8.0.0'],
-                ['node-fetch', '^3.0.0']
+                ['discord.js', { name: 'discord.js', version: '^13.0.0', type: 'production', resolved: true }],
+                ['ws', { name: 'ws', version: '^8.0.0', type: 'production', resolved: true }],
+                ['node-fetch', { name: 'node-fetch', version: '^3.0.0', type: 'production', resolved: true }]
             ]),
             devDependencies: {},
             scripts: {
@@ -128,7 +125,6 @@ function createMaliciousTestData() {
             repository: { type: 'git', url: 'https://github.com/hacker/discord-selfbot.git' },
             downloadCount: 856,
             publishedAt: new Date('2023-03-22'),
-            updatedAt: new Date('2023-03-22'),
             maintainers: [{ name: 'token-stealer', email: 'anonymous@protonmail.com' }],
             keywords: ['discord', 'selfbot', 'automation', 'tokens']
         }
@@ -147,7 +143,6 @@ function createMaliciousTestData() {
             repository: { type: 'git', url: 'https://github.com/lodash/lodash.git' },
             downloadCount: 50000000,
             publishedAt: new Date('2019-02-15'),
-            updatedAt: new Date('2019-02-15'),
             maintainers: [{ name: 'jdalton', email: 'john.david.dalton@gmail.com' }],
             keywords: ['modules', 'stdlib', 'util']
         },
@@ -163,7 +158,6 @@ function createMaliciousTestData() {
             repository: { type: 'git', url: 'https://github.com/yahoo/serialize-javascript.git' },
             downloadCount: 15000000,
             publishedAt: new Date('2019-12-05'),
-            updatedAt: new Date('2019-12-05'),
             maintainers: [{ name: 'ericf', email: 'eferraiuolo@gmail.com' }],
             keywords: ['serialize', 'javascript', 'json']
         },
@@ -174,20 +168,19 @@ function createMaliciousTestData() {
             author: { name: 'Isaac Z. Schlueter', email: 'i@izs.me' },
             license: 'ISC',
             dependencies: new Map([
-                ['chownr', '^1.1.1'],
-                ['fs-minipass', '^1.2.5'],
-                ['minipass', '^2.8.6'],
-                ['minizlib', '^1.2.1'],
-                ['mkdirp', '^0.5.0'],
-                ['safe-buffer', '^5.1.2'],
-                ['yallist', '^3.0.3']
+                ['chownr', { name: 'chownr', version: '^1.1.1', type: 'production', resolved: true }],
+                ['fs-minipass', { name: 'fs-minipass', version: '^1.2.5', type: 'production', resolved: true }],
+                ['minipass', { name: 'minipass', version: '^2.8.6', type: 'production', resolved: true }],
+                ['minizlib', { name: 'minizlib', version: '^1.2.1', type: 'production', resolved: true }],
+                ['mkdirp', { name: 'mkdirp', version: '^0.5.0', type: 'production', resolved: true }],
+                ['safe-buffer', { name: 'safe-buffer', version: '^5.1.2', type: 'production', resolved: true }],
+                ['yallist', { name: 'yallist', version: '^3.0.3', type: 'production', resolved: true }]
             ]),
             devDependencies: {},
             scripts: {},
             repository: { type: 'git', url: 'https://github.com/npm/node-tar.git' },
             downloadCount: 25000000,
             publishedAt: new Date('2020-04-26'),
-            updatedAt: new Date('2020-04-26'),
             maintainers: [{ name: 'isaacs', email: 'i@izs.me' }],
             keywords: ['tar', 'archive', 'compression']
         }
@@ -295,17 +288,18 @@ async function testMaliciousPackageDetection() {
         enablePredictiveAnalytics: true,
         confidenceThreshold: 0.6, // Lower threshold to catch more suspicious activity
     });
-    const nlpEngine = new nlp_engine_1.NLPEngine({
-        enableLicenseAnalysis: true,
-        enableDocumentationAnalysis: true,
-        enableThreatIntelligence: true,
-        sentimentThreshold: -0.3, // Detect negative sentiment
-        models: {
-            licenseClassifier: 'advanced-license-detector',
-            sentimentAnalyzer: 'threat-aware-sentiment',
-            threatExtractor: 'malware-pattern-detector'
-        }
-    });
+    // Commented out for now to avoid unused variable error
+    // const nlpEngine = new NLPEngine({
+    //   enableLicenseAnalysis: true,
+    //   enableDocumentationAnalysis: true,
+    //   enableThreatIntelligence: true,
+    //   sentimentThreshold: -0.3,
+    //   models: {
+    //     licenseClassifier: 'advanced-license-detector',
+    //     sentimentAnalyzer: 'threat-aware-sentiment',
+    //     threatExtractor: 'malware-pattern-detector'
+    //   }
+    // });
     console.log('🎯 Testing detection of known malicious packages...\n');
     // Test each malicious package
     for (const pkg of maliciousPackages) {
@@ -314,7 +308,7 @@ async function testMaliciousPackageDetection() {
             // AI Engine Analysis
             const vulnPredictions = await aiEngine.predictVulnerabilities([pkg]);
             const recommendations = await aiEngine.generateRecommendations([pkg]);
-            const analytics = await aiEngine.performPredictiveAnalytics([pkg]);
+            await aiEngine.performPredictiveAnalytics([pkg]);
             const prediction = vulnPredictions[0];
             if (prediction) {
                 console.log(`   🎯 AI Risk Score: ${prediction.riskScore}/100 (confidence: ${prediction.confidence.toFixed(2)})`);
@@ -392,7 +386,7 @@ async function testMaliciousPackageDetection() {
             if (prediction) {
                 console.log(`   🎯 Vulnerability Risk: ${prediction.riskScore}/100`);
                 // Find matching real vulnerability
-                const matchingVuln = realVulnerabilities.find(v => v.affectedVersions.some(range => pkg.version && range.includes(pkg.version.split('.')[0])));
+                const matchingVuln = realVulnerabilities.find(v => v.affectedVersions.some(range => pkg.version && range.includes(pkg.version?.split('.')[0] || '')));
                 if (matchingVuln) {
                     console.log(`   ✅ KNOWN VULNERABILITY DETECTED: ${matchingVuln.id}`);
                     console.log(`   📊 Severity: ${matchingVuln.severity}, CVSS: ${matchingVuln.cvssScore}`);
@@ -420,8 +414,8 @@ async function testSupplyChainAttackDetection() {
             author: { name: 'attacker-account-2023', email: 'new@tempmail.com' }, // Suspicious author
             license: 'MIT',
             dependencies: new Map([
-                ['malicious-analytics', '1.0.0'], // Suspicious dependency
-                ['data-collector', '2.1.0']
+                ['malicious-analytics', { name: 'malicious-analytics', version: '1.0.0', type: 'production', resolved: true }], // Suspicious dependency
+                ['data-collector', { name: 'data-collector', version: '2.1.0', type: 'production', resolved: true }]
             ]),
             devDependencies: {},
             scripts: {
@@ -430,7 +424,6 @@ async function testSupplyChainAttackDetection() {
             repository: { type: 'git', url: 'https://github.com/fake-org/react-native-safe-area-context.git' },
             downloadCount: 5000000, // High download count to appear legitimate
             publishedAt: new Date('2023-12-01'), // Recently published
-            updatedAt: new Date('2023-12-01'),
             maintainers: [
                 { name: 'original-maintainer', email: 'real@developer.com' },
                 { name: 'new-collaborator-2023', email: 'temp@email.com' } // Suspicious new maintainer
@@ -451,7 +444,6 @@ async function testSupplyChainAttackDetection() {
             repository: { type: 'git', url: 'https://github.com/typosquatter/colours.git' },
             downloadCount: 125000,
             publishedAt: new Date('2023-11-15'),
-            updatedAt: new Date('2023-11-15'),
             maintainers: [{ name: 'fake-maintainer', email: 'anon@protonmail.com' }],
             keywords: ['colors', 'console', 'terminal', 'ansi']
         }
@@ -459,8 +451,7 @@ async function testSupplyChainAttackDetection() {
     const predictiveEngine = new predictive_engine_1.PredictiveEngine({
         enableVulnerabilityPrediction: true,
         enableMaintenanceForecasting: true,
-        enableEcosystemPrediction: true,
-        enablePerformancePrediction: true
+        enableEcosystemPrediction: true
     });
     for (const pkg of supplyChainAttacks) {
         console.log(`🕵️ Analyzing potential supply chain attack: ${pkg.name}@${pkg.version}`);
@@ -493,8 +484,8 @@ async function testSupplyChainAttackDetection() {
             // Use predictive engine to assess ecosystem impact
             const ecosystemHealth = await predictiveEngine.predictEcosystemHealth('npm');
             console.log(`   🌍 Ecosystem Impact Assessment: ${ecosystemHealth.healthScore}/100`);
-            if (ecosystemHealth.risks.length > 0) {
-                console.log(`   ⚠️  Ecosystem risks identified: ${ecosystemHealth.risks.length}`);
+            if (ecosystemHealth.riskAreas.length > 0) {
+                console.log(`   ⚠️  Ecosystem risks identified: ${ecosystemHealth.riskAreas.length}`);
             }
         }
         catch (error) {
@@ -507,7 +498,7 @@ async function testSupplyChainAttackDetection() {
  * Calculate Levenshtein distance for typosquatting detection
  */
 function levenshteinDistance(str1, str2) {
-    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(0));
     for (let i = 0; i <= str1.length; i += 1) {
         matrix[0][i] = i;
     }
@@ -547,11 +538,11 @@ async function testThreatIntelligenceExtraction() {
     try {
         const threatIntel = await nlpEngine.extractThreatIntelligence(realVulnerabilities);
         console.log(`📊 Threat Analysis Results:`);
-        console.log(`   🎯 Total Threats Identified: ${threatIntel.threats.length}`);
-        console.log(`   📈 Overall Risk Level: ${threatIntel.overallRisk}/100`);
-        console.log(`   🚨 Urgency Level: ${threatIntel.urgencyLevel}`);
+        console.log(`   🎯 Total Threats Identified: ${threatIntel.extractedThreats.length}`);
+        console.log(`   📈 Overall Risk Level: ${threatIntel.riskAssessment.overallRisk}/100`);
+        console.log(`   🚨 Urgency Level: ${threatIntel.riskAssessment.urgency}`);
         console.log(`\n🔍 Specific Threats Detected:`);
-        threatIntel.threats.forEach((threat, index) => {
+        threatIntel.extractedThreats.forEach((threat, index) => {
             console.log(`   ${index + 1}. ${threat.type.toUpperCase()}: ${threat.description}`);
             console.log(`      🎯 Severity: ${threat.severity}, Confidence: ${threat.confidence.toFixed(2)}`);
             console.log(`      📍 Indicators: ${threat.indicators.join(', ')}`);
@@ -563,9 +554,9 @@ async function testThreatIntelligenceExtraction() {
                 console.log(`   ${index + 1}. ${strategy}`);
             });
         }
-        if (threatIntel.threatIndicators.length > 0) {
+        if (threatIntel.indicators.length > 0) {
             console.log(`\n🔍 Threat Indicators Found:`);
-            threatIntel.threatIndicators.forEach(indicator => {
+            threatIntel.indicators.forEach(indicator => {
                 console.log(`   • ${indicator.type}: ${indicator.value} (confidence: ${indicator.confidence.toFixed(2)})`);
             });
         }
@@ -589,13 +580,12 @@ async function testPerformanceUnderAttack() {
             description: 'React is a JavaScript library for building user interfaces.',
             author: { name: 'React Team', email: 'react-core@fb.com' },
             license: 'MIT',
-            dependencies: new Map([['loose-envify', '^1.1.0']]),
+            dependencies: new Map([['loose-envify', { name: 'loose-envify', version: '^1.1.0', type: 'production', resolved: true }]]),
             devDependencies: {},
             scripts: {},
             repository: { type: 'git', url: 'https://github.com/facebook/react.git' },
             downloadCount: 20000000,
             publishedAt: new Date('2022-06-14'),
-            updatedAt: new Date('2022-06-14'),
             maintainers: [{ name: 'react-team', email: 'react-core@fb.com' }],
             keywords: ['react', 'javascript', 'library', 'ui']
         }
