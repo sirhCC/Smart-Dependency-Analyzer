@@ -443,7 +443,7 @@ export class ComprehensiveSecurityEngine {
     ];
 
     if (pkg.name || pkg.description) {
-      const nameAndDesc = (pkg.name + ' ' + (pkg.description || '')).toLowerCase();
+      const nameAndDesc = `${pkg.name} ${pkg.description || ''}`.toLowerCase();
       
       securityTerms.forEach(term => {
         if (nameAndDesc.includes(term)) {

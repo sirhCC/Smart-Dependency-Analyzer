@@ -382,7 +382,7 @@ class ComprehensiveSecurityEngine {
             'backdoor', 'malware', 'virus', 'trojan', 'keylog', 'steal', 'hack'
         ];
         if (pkg.name || pkg.description) {
-            const nameAndDesc = (pkg.name + ' ' + (pkg.description || '')).toLowerCase();
+            const nameAndDesc = `${pkg.name} ${pkg.description || ''}`.toLowerCase();
             securityTerms.forEach(term => {
                 if (nameAndDesc.includes(term)) {
                     score += 25;

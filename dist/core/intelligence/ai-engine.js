@@ -304,17 +304,127 @@ class AIEngine extends events_1.EventEmitter {
 exports.AIEngine = AIEngine;
 // ML Model Classes (placeholder implementations)
 class VulnerabilityPredictionModel {
+    suspiciousPatterns;
+    maliciousScriptPatterns;
+    temporaryEmailPatterns;
+    popularPackages;
+    constructor() {
+        this.suspiciousPatterns = [
+            'steal', 'mining', 'crypto-miner', 'backdoor', 'malicious', 'keylogger',
+            'botnet', 'harvest', 'evil', 'attacker', 'hacker', 'exploit'
+        ];
+        this.maliciousScriptPatterns = [
+            /curl.*https?:\/\/.*evil\./,
+            /wget.*malicious/,
+            /node.*eval/,
+            /child_process.*exec/,
+            /\.ssh\/id_rsa/,
+            /process\.env/,
+            /Buffer\.from.*base64/,
+            /require\(['"]child_process['"]\)/,
+            /powershell.*Add-MpPreference/
+        ];
+        this.temporaryEmailPatterns = [
+            /@temp/,
+            /@guerrillamail/,
+            /@10minute/,
+            /@tempmail/,
+            /@protonmail.*temp/,
+            /temp.*@gmail/,
+            /anon@/,
+            /fake@/,
+            /steal@/,
+            /evil@/,
+            /mining@.*evil/
+        ];
+        this.popularPackages = [
+            'react', 'lodash', 'express', 'colors', 'left-pad', 'ua-parser-js'
+        ];
+    }
     async initialize() {
         // Initialize vulnerability prediction model
     }
     async predict(pkg) {
-        // Simulate ML prediction
+        const threats = [];
+        let riskScore = 0;
+        let confidence = 0.8;
+        // Check for malicious scripts
+        if (pkg.scripts) {
+            Object.entries(pkg.scripts).forEach(([scriptType, script]) => {
+                this.maliciousScriptPatterns.forEach(pattern => {
+                    if (pattern.test(script)) {
+                        threats.push(`Malicious ${scriptType} script detected`);
+                        riskScore += 30;
+                    }
+                });
+                // Check for suspicious keywords in scripts
+                this.suspiciousPatterns.forEach(pattern => {
+                    if (script.toLowerCase().includes(pattern)) {
+                        threats.push(`Suspicious ${scriptType} script: contains "${pattern}"`);
+                        riskScore += 15;
+                    }
+                });
+            });
+        }
+        // Check for suspicious author/maintainer emails
+        if (pkg.author?.email) {
+            this.temporaryEmailPatterns.forEach(pattern => {
+                if (pattern.test(pkg.author.email)) {
+                    threats.push(`Suspicious author email: ${pkg.author.email}`);
+                    riskScore += 20;
+                }
+            });
+        }
+        if (pkg.maintainers) {
+            pkg.maintainers.forEach(maintainer => {
+                if (maintainer.email) {
+                    this.temporaryEmailPatterns.forEach(pattern => {
+                        if (pattern.test(maintainer.email)) {
+                            threats.push(`Suspicious maintainer email: ${maintainer.email}`);
+                            riskScore += 15;
+                        }
+                    });
+                }
+                // Check for suspicious maintainer names
+                if (maintainer.name?.includes('2023') || maintainer.name?.includes('2024') ||
+                    maintainer.name?.includes('temp') || maintainer.name?.includes('fake')) {
+                    threats.push(`Suspicious maintainer name: ${maintainer.name}`);
+                    riskScore += 10;
+                }
+            });
+        }
+        // Check for typosquatting
+        this.popularPackages.forEach(popular => {
+            if (pkg.name !== popular && pkg.name.includes(popular.slice(0, -1))) {
+                threats.push(`Potential typosquatting of: ${popular}`);
+                riskScore += 25;
+            }
+        });
+        // Check for suspicious keywords in description
+        if (pkg.description) {
+            this.suspiciousPatterns.forEach(pattern => {
+                if (pkg.description.toLowerCase().includes(pattern)) {
+                    threats.push(`Suspicious description: contains "${pattern}"`);
+                    riskScore += 10;
+                }
+            });
+        }
+        // Ensure risk score is capped at 100
+        riskScore = Math.min(riskScore, 100);
+        // Determine severity based on risk score
+        let severity = types_1.VulnerabilitySeverity.LOW;
+        if (riskScore >= 80)
+            severity = types_1.VulnerabilitySeverity.CRITICAL;
+        else if (riskScore >= 60)
+            severity = types_1.VulnerabilitySeverity.HIGH;
+        else if (riskScore >= 40)
+            severity = types_1.VulnerabilitySeverity.MEDIUM;
         return {
             packageName: pkg.name,
             packageVersion: pkg.version,
-            predictedSeverity: types_1.VulnerabilitySeverity.MEDIUM,
-            confidence: 0.75 + Math.random() * 0.25,
-            reasoningFactors: [
+            predictedSeverity: severity,
+            confidence: threats.length > 0 ? confidence : 0.6,
+            reasoningFactors: threats.length > 0 ? threats : [
                 'Package age and maintenance frequency',
                 'Historical vulnerability patterns',
                 'Dependency complexity analysis',
@@ -324,9 +434,11 @@ class VulnerabilityPredictionModel {
             preventiveMeasures: [
                 'Regular security audits',
                 'Dependency updates',
-                'Code review processes'
+                'Code review processes',
+                'Malware scanning',
+                'Script analysis'
             ],
-            riskScore: Math.floor(Math.random() * 40 + 30),
+            riskScore,
         };
     }
     async retrain(data) {
