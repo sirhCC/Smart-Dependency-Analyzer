@@ -1,14 +1,58 @@
 {
-  "name": "sda",
+  "name": "@sirhcc/smart-dependency-analyzer",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "description": "The world's most advanced dependency analysis platform with AI-powered security intelligence",
+  "main": "dist/index.js",
+  "bin": {
+    "sda": "dist/cli/index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "dev": "ts-node src/cli/index.ts",
+    "start": "node dist/cli/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "validate": "npm run typecheck && npm run lint && npm run test:ci",
+    "prepare": "husky install",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "dependency-analysis",
+    "security",
+    "vulnerability-scanner",
+    "supply-chain",
+    "npm",
+    "typescript",
+    "cli",
+    "enterprise"
+  ],
+  "author": "Chris <chris@sirhcc.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sirhCC/smart-dependency-analyzer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sirhCC/smart-dependency-analyzer/issues"
+  },
+  "homepage": "https://github.com/sirhCC/smart-dependency-analyzer#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^24.1.0",
