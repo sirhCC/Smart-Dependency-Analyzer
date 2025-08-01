@@ -12,6 +12,10 @@ import { AIEngine } from '../core/intelligence/ai-engine';
 import { NLPEngine } from '../core/intelligence/nlp-engine';
 import { PredictiveEngine } from '../core/intelligence/predictive-engine';
 import { Package, Vulnerability, VulnerabilitySeverity, VulnerabilitySource } from '../types';
+import { cacheManager } from '../core/performance/cache-manager';
+
+// Track all created engines for cleanup
+const createdEngines: AIEngine[] = [];
 
 /**
  * Create realistic malicious and vulnerable test packages based on real-world threats
@@ -302,6 +306,7 @@ async function testMaliciousPackageDetection(): Promise<void> {
     enablePredictiveAnalytics: true,
     confidenceThreshold: 0.6, // Lower threshold to catch more suspicious activity
   });
+  createdEngines.push(aiEngine);
 
   console.log('🎯 Testing detection of known malicious packages...\n');
 
@@ -936,5 +941,18 @@ describe('AI Security Validation', () => {
       // Run the main test function
       await expect(testMaliciousPackageDetection()).resolves.not.toThrow();
     }, 25000);
+  });
+
+  // Cleanup after all tests to prevent hanging
+  afterAll(() => {
+    // Cleanup all created AI engines
+    createdEngines.forEach(engine => {
+      if (engine && typeof engine.destroy === 'function') {
+        engine.destroy();
+      }
+    });
+    
+    // Cleanup cache manager
+    cacheManager.destroy();
   });
 });

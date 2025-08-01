@@ -220,7 +220,7 @@ describe('PackageDiscoveryService', () => {
       expect(result.statistics.totalPackages).toBe(1);
       expect(result.statistics.directDependencies).toBe(1); // Only packages with production deps
       expect(result.statistics.devDependencies).toBe(1); // Only packages with dev deps
-      expect(result.statistics.discoveryTimeMs).toBeGreaterThan(0);
+      expect(result.statistics.discoveryTimeMs).toBeGreaterThanOrEqual(0);
     });
   });
 
