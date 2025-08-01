@@ -688,6 +688,7 @@ async function testPerformanceUnderAttack(): Promise<void> {
     enablePredictiveAnalytics: true,
     confidenceThreshold: 0.7,
   });
+  createdEngines.push(aiEngine);
 
   try {
     const startTime = Date.now();
@@ -792,6 +793,7 @@ describe('AI Security Validation', () => {
         enablePredictiveAnalytics: true,
         confidenceThreshold: 0.6,
       });
+      createdEngines.push(aiEngine);
 
       const predictions = await aiEngine.predictVulnerabilities(allPackages);
       
@@ -827,6 +829,7 @@ describe('AI Security Validation', () => {
         enablePredictiveAnalytics: true,
         confidenceThreshold: 0.6,
       });
+      createdEngines.push(aiEngine);
 
       const predictions = await aiEngine.predictVulnerabilities(maliciousPackages);
       
