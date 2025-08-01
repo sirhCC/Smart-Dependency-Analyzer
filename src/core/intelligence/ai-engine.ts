@@ -11,6 +11,8 @@
 import { EventEmitter } from 'events';
 import { getLogger } from '../../utils/logger';
 import { Package, Vulnerability, VulnerabilitySeverity } from '../../types';
+import { cacheManager } from '../performance/cache-manager';
+import { parallelEngine } from '../performance/parallel-engine';
 
 const logger = getLogger('AIEngine');
 
@@ -239,29 +241,88 @@ export class AIEngine extends EventEmitter {
     logger.info(`🔮 Predicting vulnerabilities for ${packages.length} packages`);
 
     try {
-      const predictions: VulnerabilityPrediction[] = [];
+      // Separate cached and uncached packages for optimal processing
+      const uncachedPackages: Package[] = [];
+      const cachedPredictions: VulnerabilityPrediction[] = [];
 
+      // Check cache first for all packages
       for (const pkg of packages) {
-        const cacheKey = `vuln-pred:${pkg.name}:${pkg.version}`;
-        let prediction = this.predictionCache.get(cacheKey);
-
-        if (!prediction) {
-          prediction = await this.vulnerabilityModel.predict(pkg);
-          
-          if (prediction.confidence >= this.config.confidenceThreshold) {
-            this.predictionCache.set(cacheKey, prediction);
-          }
-        }
-
-        if (prediction && prediction.confidence >= this.config.confidenceThreshold) {
-          predictions.push(prediction);
+        const cachedPrediction = cacheManager.getCachedPrediction(pkg);
+        if (cachedPrediction && cachedPrediction.confidence >= this.config.confidenceThreshold) {
+          cachedPredictions.push(cachedPrediction);
+        } else {
+          uncachedPackages.push(pkg);
         }
       }
 
-      const processingTime = Date.now() - startTime;
-      logger.info(`🎯 Generated ${predictions.length} vulnerability predictions in ${processingTime}ms`);
+      logger.info(`📊 Cache stats: ${cachedPredictions.length} cached, ${uncachedPackages.length} need processing`);
 
-      return predictions.sort((a, b) => b.riskScore - a.riskScore);
+      // Process uncached packages in parallel if there are many
+      let newPredictions: VulnerabilityPrediction[] = [];
+      
+      if (uncachedPackages.length > 0) {
+        if (uncachedPackages.length >= 5) {
+          // Use parallel processing for large batches
+          newPredictions = await parallelEngine.processPackagesBatch(
+            uncachedPackages,
+            async (pkg: Package) => {
+              const prediction = await this.vulnerabilityModel.predict(pkg);
+              
+              // Cache successful predictions
+              if (prediction.confidence >= this.config.confidenceThreshold) {
+                cacheManager.cachePrediction(pkg, prediction);
+              }
+              
+              return prediction;
+            },
+            {
+              maxConcurrency: Math.min(8, Math.max(2, Math.floor(uncachedPackages.length / 5))),
+              chunkSize: Math.max(1, Math.floor(uncachedPackages.length / 4)),
+              timeout: 10000, // 10 second timeout per package
+              retryAttempts: 1
+            }
+          );
+        } else {
+          // Process small batches sequentially for better cache coherence
+          for (const pkg of uncachedPackages) {
+            try {
+              const prediction = await this.vulnerabilityModel.predict(pkg);
+              
+              if (prediction.confidence >= this.config.confidenceThreshold) {
+                cacheManager.cachePrediction(pkg, prediction);
+                newPredictions.push(prediction);
+              }
+            } catch (error) {
+              logger.warn(`⚠️ Failed to predict for ${pkg.name}: ${error}`);
+            }
+          }
+        }
+      }
+
+      // Combine cached and new predictions
+      const allPredictions = [...cachedPredictions, ...newPredictions];
+      const processingTime = Date.now() - startTime;
+      
+      // Calculate performance metrics
+      const avgTimePerPackage = processingTime / packages.length;
+      const cacheHitRate = (cachedPredictions.length / packages.length) * 100;
+      
+      logger.info(`🎯 Generated ${allPredictions.length} vulnerability predictions in ${processingTime}ms`);
+      logger.info(`⚡ Performance: ${avgTimePerPackage.toFixed(1)}ms/pkg, ${cacheHitRate.toFixed(1)}% cache hit rate`);
+
+      // Emit performance metrics
+      this.emit('performance:prediction', {
+        totalPackages: packages.length,
+        processingTime,
+        avgTimePerPackage,
+        cacheHitRate,
+        predictionsGenerated: allPredictions.length
+      });
+
+      return allPredictions
+        .filter(p => p.confidence >= this.config.confidenceThreshold)
+        .sort((a, b) => b.riskScore - a.riskScore);
+        
     } catch (error) {
       logger.error('❌ Vulnerability prediction failed', { error });
       return [];
@@ -269,7 +330,7 @@ export class AIEngine extends EventEmitter {
   }
 
   /**
-   * Generate smart recommendations for dependency improvements
+   * Generate smart recommendations for dependency improvements with performance optimization
    */
   public async generateRecommendations(packages: Package[]): Promise<SmartRecommendation[]> {
     if (!this.config.enableSmartRecommendations) {
@@ -280,22 +341,67 @@ export class AIEngine extends EventEmitter {
     logger.info(`💡 Generating smart recommendations for ${packages.length} packages`);
 
     try {
-      const recommendations: SmartRecommendation[] = [];
+      // Separate cached and uncached packages
+      const uncachedPackages: Package[] = [];
+      const cachedRecommendations: SmartRecommendation[] = [];
 
+      // Check cache first for all packages
       for (const pkg of packages) {
         const cacheKey = `recommendations:${pkg.name}:${pkg.version}`;
-        let packageRecommendations = this.predictionCache.get(cacheKey);
-
-        if (!packageRecommendations) {
-          packageRecommendations = await this.recommendationModel.generateRecommendations(pkg);
-          this.predictionCache.set(cacheKey, packageRecommendations);
+        const cached = this.predictionCache.get(cacheKey);
+        if (cached) {
+          cachedRecommendations.push(...cached);
+        } else {
+          uncachedPackages.push(pkg);
         }
-
-        recommendations.push(...packageRecommendations);
       }
 
+      // Process uncached packages with parallel processing for large batches
+      let newRecommendations: SmartRecommendation[] = [];
+      
+      if (uncachedPackages.length > 0) {
+        if (uncachedPackages.length >= 3) {
+          // Use parallel processing for better performance
+          const results = await parallelEngine.processPackagesBatch(
+            uncachedPackages,
+            async (pkg: Package) => {
+              const packageRecommendations = await this.recommendationModel.generateRecommendations(pkg);
+              
+              // Cache successful results
+              const cacheKey = `recommendations:${pkg.name}:${pkg.version}`;
+              this.predictionCache.set(cacheKey, packageRecommendations);
+              
+              return packageRecommendations;
+            },
+            {
+              maxConcurrency: Math.min(4, uncachedPackages.length),
+              chunkSize: Math.max(1, Math.floor(uncachedPackages.length / 2)),
+              timeout: 5000, // 5 second timeout per package
+              retryAttempts: 1
+            }
+          );
+          
+          newRecommendations = results.flat();
+        } else {
+          // Process small batches sequentially
+          for (const pkg of uncachedPackages) {
+            try {
+              const packageRecommendations = await this.recommendationModel.generateRecommendations(pkg);
+              const cacheKey = `recommendations:${pkg.name}:${pkg.version}`;
+              this.predictionCache.set(cacheKey, packageRecommendations);
+              newRecommendations.push(...packageRecommendations);
+            } catch (error) {
+              logger.warn(`⚠️ Failed to generate recommendations for ${pkg.name}: ${error}`);
+            }
+          }
+        }
+      }
+
+      // Combine cached and new recommendations
+      const allRecommendations = [...cachedRecommendations, ...newRecommendations];
+
       // Sort by priority and confidence, limit results
-      const sortedRecommendations = recommendations
+      const sortedRecommendations = allRecommendations
         .sort((a, b) => {
           const priorityWeight = { critical: 4, high: 3, medium: 2, low: 1 };
           const priorityDiff = priorityWeight[b.priority] - priorityWeight[a.priority];
@@ -304,7 +410,21 @@ export class AIEngine extends EventEmitter {
         .slice(0, this.config.maxRecommendations);
 
       const processingTime = Date.now() - startTime;
+      const avgTimePerPackage = processingTime / packages.length;
+      const cacheHitRate = cachedRecommendations.length > 0 ? 
+        (cachedRecommendations.length / allRecommendations.length) * 100 : 0;
+      
       logger.info(`✨ Generated ${sortedRecommendations.length} recommendations in ${processingTime}ms`);
+      logger.info(`⚡ Performance: ${avgTimePerPackage.toFixed(1)}ms/pkg, ${cacheHitRate.toFixed(1)}% cache hit rate`);
+
+      // Emit performance metrics
+      this.emit('performance:recommendations', {
+        totalPackages: packages.length,
+        processingTime,
+        avgTimePerPackage,
+        cacheHitRate,
+        recommendationsGenerated: sortedRecommendations.length
+      });
 
       return sortedRecommendations;
     } catch (error) {
@@ -514,7 +634,6 @@ class VulnerabilityPredictionModel {
   private readonly networkPatterns: RegExp[];
   private readonly systemPatterns: RegExp[];
   private readonly cryptoMiningPatterns: RegExp[];
-  private readonly typosquattingCache: Map<string, number>;
 
   constructor() {
     // Enhanced suspicious patterns with more comprehensive coverage
@@ -617,8 +736,6 @@ class VulnerabilityPredictionModel {
       /wallet|address|hash|blockchain/gi,
       /pool|stratum/gi
     ];
-
-    this.typosquattingCache = new Map();
   }
 
   /**
@@ -645,38 +762,44 @@ class VulnerabilityPredictionModel {
   }
 
   /**
-   * Enhanced typosquatting detection with similarity scoring
+   * Enhanced typosquatting detection with similarity scoring and intelligent caching
    */
   private checkTyposquatting(packageName: string): { isTyposquat: boolean; target: string; confidence: number } {
-    // Check cache first
-    const cacheKey = packageName;
-    if (this.typosquattingCache.has(cacheKey)) {
-      const cachedResult = this.typosquattingCache.get(cacheKey)!;
-      return {
-        isTyposquat: cachedResult > 0.7,
-        target: '',
-        confidence: cachedResult
-      };
+    // Check intelligent cache first
+    const cachedResult = cacheManager.getCachedTyposquattingResult(packageName);
+    if (cachedResult) {
+      return cachedResult;
     }
 
     let bestMatch = { target: '', confidence: 0, distance: Infinity };
     
+    // Optimized search with early termination for performance
     for (const popular of this.popularPackages) {
       if (packageName === popular) continue;
+      
+      // Quick similarity pre-check to skip expensive calculations
+      const lengthDiff = Math.abs(packageName.length - popular.length);
+      if (lengthDiff > 3) continue; // Skip packages with very different lengths
       
       const distance = this.calculateEditDistance(packageName, popular);
       const maxLen = Math.max(packageName.length, popular.length);
       const similarity = 1 - (distance / maxLen);
       
-      // Enhanced typosquatting pattern detection
+      // Early termination if we find a very good match
+      if (similarity > 0.95) {
+        bestMatch = { target: popular, confidence: similarity, distance };
+        break;
+      }
+      
+      // Enhanced typosquatting pattern detection with performance optimization
       const patterns = [
         packageName.includes(popular.slice(0, -1)), // Missing last character
         packageName.includes(popular) && packageName.length > popular.length, // Extra characters
         distance <= 2 && packageName.length > 3, // Small edit distance
         similarity > 0.8, // High similarity
-        packageName.replace(/s+$/, '') === popular, // Extra 's' at end
-        packageName.replace(/d+$/, '') === popular, // Extra 'd' at end
-        packageName.split('').sort().join('') === popular.split('').sort().join('') // Anagram
+        packageName.endsWith('s') && packageName.slice(0, -1) === popular, // Extra 's' at end
+        packageName.endsWith('d') && packageName.slice(0, -1) === popular, // Extra 'd' at end
+        // Removed expensive anagram check for performance
       ];
       
       if (patterns.some(p => p) && similarity > bestMatch.confidence) {
@@ -684,14 +807,16 @@ class VulnerabilityPredictionModel {
       }
     }
 
-    // Cache result
-    this.typosquattingCache.set(cacheKey, bestMatch.confidence);
-    
-    return {
+    const result = {
       isTyposquat: bestMatch.confidence > 0.7,
       target: bestMatch.target,
       confidence: bestMatch.confidence
     };
+
+    // Cache result with intelligent TTL based on confidence
+    cacheManager.cacheTyposquattingResult(packageName, result);
+    
+    return result;
   }
 
   /**

@@ -142,7 +142,7 @@ export declare class AIEngine extends EventEmitter {
      */
     predictVulnerabilities(packages: Package[]): Promise<VulnerabilityPrediction[]>;
     /**
-     * Generate smart recommendations for dependency improvements
+     * Generate smart recommendations for dependency improvements with performance optimization
      */
     generateRecommendations(packages: Package[]): Promise<SmartRecommendation[]>;
     /**
