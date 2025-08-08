@@ -13,11 +13,20 @@ import { createPackageDiscoveryService } from '../core/services/package-discover
 import { createVulnerabilityScanner } from '../core/services/vulnerability-scanner';
 import { createGitHubAdvisoryDataSource } from '../integrations/security/github-advisory';
 import { createLicenseIntelligenceService } from '../core/services/license-intelligence';
+import { lifecycle } from '../utils/lifecycle';
+import { loadPolicy, evaluatePolicy, Policy } from '../utils/policy';
 
 const logger = Logger.getLogger('CLI');
 
 async function main(): Promise<void> {
   console.log('🚀 SDA CLI Starting...');
+  // Ensure we gracefully stop background services on exit signals
+  lifecycle.hookProcessSignals();
+  // Register core resource cleanup globally
+  lifecycle.register('CacheManager', async () => {
+    const { cacheManager } = await import('../core/performance/cache-manager');
+    cacheManager.destroy();
+  });
   
   const program = new Command();
 
@@ -46,6 +55,7 @@ async function main(): Promise<void> {
     .option('--licenses', 'Include license analysis', true)
     .option('--compatibility', 'Include license compatibility analysis', true)
     .option('--risk', 'Include legal risk assessment', true)
+  .option('--policy <file>', 'Path to policy (json|yaml) to enforce', undefined)
     .option('--save <file>', 'Save results to file')
     .action(async (projectPath: string, options) => {
       try {
@@ -58,7 +68,7 @@ async function main(): Promise<void> {
         
         // Phase 1: Package Discovery
         console.log(chalk.cyan('\n📦 Phase 1: Package Discovery'));
-        const packageDiscovery = createPackageDiscoveryService();
+  const packageDiscovery = createPackageDiscoveryService();
         const discoveryResult = await packageDiscovery.discoverPackages(projectPath, {
           includeDev: options.includeDev
         });
@@ -72,8 +82,8 @@ async function main(): Promise<void> {
 
         // Phase 2: Security Analysis
         console.log(chalk.cyan('\n🛡️  Phase 2: Security Analysis'));
-        const githubSource = createGitHubAdvisoryDataSource();
-        const vulnerabilityScanner = createVulnerabilityScanner([githubSource]);
+  const githubSource = createGitHubAdvisoryDataSource();
+  const vulnerabilityScanner = createVulnerabilityScanner([githubSource]);
         
         const vulnerabilityResults = await vulnerabilityScanner.scanPackages(
           discoveryResult.packages,
@@ -192,7 +202,7 @@ async function main(): Promise<void> {
           }
         }
 
-        // Summary Report
+  // Summary Report
         console.log(chalk.blue('\n📊 Executive Summary'));
         console.log(chalk.gray('━'.repeat(40)));
         console.log(`📦 Packages analyzed: ${discoveryResult.packages.length}`);
@@ -218,11 +228,35 @@ async function main(): Promise<void> {
           console.log(`⚖️  Legal risk level: ${riskReport.overallRisk}`);
         }
 
+        // Policy evaluation (optional)
+        let policy: Policy | undefined;
+        if (options.policy) {
+          try {
+            policy = await loadPolicy(options.policy);
+            const policyResult = evaluatePolicy(policy, {
+              vulnerabilityResults,
+              licenseAnalyses: licenseResults ?? null,
+            });
+            if (policyResult.hasViolations) {
+              console.log(chalk.red('\n🚫 Policy Violations'));
+              for (const v of policyResult.violations) console.log(`   • ${v}`);
+              if (policy.failOnPolicyViolation) {
+                throw new Error('Policy violations detected');
+              }
+            } else {
+              console.log(chalk.green('\n✅ No policy violations'));
+            }
+          } catch (err) {
+            logger.error('Policy evaluation failed', err);
+            throw err;
+          }
+        }
+
         const totalTime = Date.now() - startTime;
         console.log(chalk.green(`\n✅ Analysis completed in ${totalTime}ms`));
         
         // Save results if requested
-        if (options.save) {
+  if (options.save) {
           const outputData = {
             timestamp: new Date().toISOString(),
             packages: discoveryResult,
@@ -240,7 +274,8 @@ async function main(): Promise<void> {
       } catch (error) {
         logger.error('Analysis failed:', error);
         console.error(chalk.red('\n❌ Analysis failed:'), error instanceof Error ? error.message : 'Unknown error');
-        process.exit(1);
+  await lifecycle.shutdown();
+  process.exit(1);
       }
     });
 
@@ -321,6 +356,8 @@ async function main(): Promise<void> {
   console.log('📋 Parsing command line arguments...');
   await program.parseAsync();
   console.log('✅ CLI execution completed');
+  // Normal, explicit shutdown for good measure
+  await lifecycle.shutdown();
 }
 
 // Export the main function for module usage
@@ -329,8 +366,9 @@ export { main };
 // Run CLI if this is the main module
 if (require.main === module) {
   console.log('🎯 CLI module detected as main - starting execution');
-  main().catch((error) => {
+  main().catch(async (error) => {
     console.error('CLI failed:', error);
+    await lifecycle.shutdown();
     process.exit(1);
   });
 } else {
