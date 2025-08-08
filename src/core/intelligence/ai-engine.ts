@@ -589,12 +589,20 @@ export class AIEngine extends EventEmitter {
         logger.error('Continuous learning failed', { error });
       }
     }, this.config.modelUpdateFrequency * 60 * 60 * 1000); // Convert hours to ms
+    // Don't keep process alive just for background training
+    if (this.trainingInterval && typeof this.trainingInterval.unref === 'function') {
+      this.trainingInterval.unref();
+    }
   }
 
   private startMetricsCollection(): void {
     this.metricsInterval = setInterval(() => {
       this.emit('metrics', this.getMetrics());
     }, 60000); // Every minute
+    // Avoid preventing process exit during tests
+    if (this.metricsInterval && typeof this.metricsInterval.unref === 'function') {
+      this.metricsInterval.unref();
+    }
   }
 
   private getLastModelUpdate(): Date | null {
@@ -949,8 +957,8 @@ class VulnerabilityPredictionModel {
     
     // Enhanced maintainer analysis
     if (pkg.maintainers && pkg.maintainers.length > 0) {
-      let suspiciousMaintainers = 0;
-      let totalMaintainers = pkg.maintainers.length;
+  let suspiciousMaintainers = 0;
+  const totalMaintainers = pkg.maintainers.length;
       
       pkg.maintainers.forEach(maintainer => {
         if (maintainer.email) {
