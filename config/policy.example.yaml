@@ -1,0 +1,20 @@
+# SDA Policy Example (YAML)
+# Configure security and license rules enforced during analysis.
+
+# Disallow these SPDX license identifiers across dependencies
+# e.g., strong copyleft licenses if your project requires permissive licenses
+# Common: GPL-3.0-only, AGPL-3.0-only, SSPL-1.0
+# Empty list means no license ban is enforced
+#
+disallowedLicenses:
+  - GPL-3.0-only
+  - AGPL-3.0-only
+
+# Maximum allowed vulnerability severity across all findings
+# Allowed values: low, medium, high, critical
+# If any vulnerability exceeds this level, it's a policy violation
+maxSeverity: high
+
+# If true, SDA will exit with non-zero code when violations are found
+# Useful for CI to fail builds on policy violations
+failOnPolicyViolation: true
