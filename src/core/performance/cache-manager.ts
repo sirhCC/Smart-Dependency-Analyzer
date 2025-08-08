@@ -295,6 +295,10 @@ export class CacheManager {
     this.cleanupTimer = setInterval(() => {
       this.cleanup();
     }, this.CLEANUP_INTERVAL);
+    // Allow process to exit naturally without waiting for interval
+    if (typeof this.cleanupTimer.unref === 'function') {
+      this.cleanupTimer.unref();
+    }
   }
 
   /**
