@@ -16,14 +16,14 @@ This document lists concrete improvements by priority to enhance code quality, s
   - Rationale: Enterprise security model requires strict user input/config parsing.
   - Actions:
     - [x] Introduce Zod schemas (policy file validation)
-    - [ ] Extend schemas to CLI options, file paths, and service configs (scanner, license, discovery)
+  - [x] Extend schemas to CLI options, file paths, and service configs (scanner, license, discovery)
     - [x] Validate before execution; provide actionable error messages (policy load)
 
 - Robust error boundaries and retries for integrations
   - Rationale: External APIs (e.g., GitHub Advisory) can fail or rate-limit.
   - Actions:
-    - [ ] Wrap data-source calls with circuit breaker + retry (exponential backoff, jitter); cap total time by existing timeout
-    - [ ] Normalize errors into typed domain errors; log with correlation IDs
+  - [x] Wrap GitHub Advisory source with circuit breaker + retry (exponential backoff, jitter); cap total time by existing timeout
+  - [x] Normalize errors into typed domain errors; log with correlation IDs
 
 - Security policy enforcement (baseline)
   - Rationale: Enforce organization policies consistently.
@@ -117,7 +117,7 @@ This document lists concrete improvements by priority to enhance code quality, s
 ## Quick wins (low risk)
 
 - [x] Unify and expose a `shutdown()` in CLI to call `destroy()` on engines and caches on exit signals
-- [ ] Add `--log-level` and `--silent` flags; thread through to `Logger`
+- [x] Add `--log-level` and `--silent` flags; thread through to `Logger`
 - [ ] Cache key namespaces based on model version to prevent stale predictions reuse
 - [ ] Add `npm run test:detect` shortcut that runs Jest with `--detectOpenHandles`
 
