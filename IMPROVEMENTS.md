@@ -38,8 +38,10 @@ This document lists concrete improvements by priority to enhance code quality, s
 - Concurrency and backpressure controls
   - Rationale: Safe parallelism for 10k+ packages.
   - Actions:
-    - [ ] Add bounded concurrency (e.g., p-limit) per data source and per phase
-    - [ ] Queue large scans; surface progress + ETA
+  - [x] Add bounded concurrency for package vulnerability scanning (initial implementation with global limiter)
+  - [ ] Add per-data-source concurrency pools (API-specific throttling)
+  - [ ] Add phase-specific limits (discovery vs scan vs AI prediction)
+  - [ ] Queue large scans; surface progress + ETA
 
 - Intelligent caching enhancements
   - Rationale: Further reduce duplicate work and memory.
