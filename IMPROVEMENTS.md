@@ -119,7 +119,8 @@ This document lists concrete improvements by priority to enhance code quality, s
 - [x] Unify and expose a `shutdown()` in CLI to call `destroy()` on engines and caches on exit signals
 - [x] Add `--log-level` and `--silent` flags; thread through to `Logger`
 - [ ] Cache key namespaces based on model version to prevent stale predictions reuse
-- [ ] Add `npm run test:detect` shortcut that runs Jest with `--detectOpenHandles`
+- [x] Add `npm run test:detect` shortcut that runs Jest with `--detectOpenHandles`
+- [x] Add publisher policy edge‑case unit tests (names/domains, absence, case-insensitive)
 
 ## Longer-term initiatives
 

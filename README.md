@@ -77,6 +77,9 @@ Options:
   --output <file>         save to file
   --group-by-license      group packages by license type
   --include-texts         include full license texts
+  --verbose               enable verbose logging
+  --log-level <silent|fatal|error|warn|info|debug|trace> control the log level
+  --silent                run in silent mode (no logs)
 ```
 
 ---
