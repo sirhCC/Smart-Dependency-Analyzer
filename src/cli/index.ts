@@ -42,6 +42,8 @@ async function main(): Promise<void> {
   // Global options
   program
     .option('-v, --verbose', 'Enable verbose logging', false)
+    .option('--log-level <level>', 'Log level (silent,fatal,error,warn,info,debug,trace)')
+    .option('--silent', 'Disable console logging', false)
     .option('--config <path>', 'Path to configuration file')
     .option('--no-color', 'Disable colored output');
 
@@ -61,12 +63,21 @@ async function main(): Promise<void> {
     .action(async (projectPath: string, options) => {
       try {
         // Validate CLI options (analyze)
-        const validated = AnalyzeOptionsSchema.safeParse(options);
+        const validated = AnalyzeOptionsSchema.safeParse({
+          ...options,
+          logLevel: options.logLevel ?? (options.verbose ? 'debug' : undefined),
+          silent: options.silent ?? false,
+        });
         if (!validated.success) {
           console.error(chalk.red('❌ Invalid options:'), validated.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', '));
           process.exit(1);
         }
         const opts = validated.data;
+        // Apply logging preferences
+        const LoggerClass = (await import('../utils/logger')).Logger;
+        const instance = (LoggerClass as any).getInstance?.();
+        if (instance && opts.logLevel) instance.setLevel(opts.logLevel as any);
+        if (instance && opts.silent) instance.setLevel('silent' as any);
         const startTime = Date.now();
         logger.info(`🔍 Starting comprehensive analysis: ${projectPath}`);
         
@@ -299,12 +310,21 @@ async function main(): Promise<void> {
     .action(async (projectPath: string, options) => {
       try {
         // Validate CLI options (license)
-        const validated = LicenseOptionsSchema.safeParse(options);
+        const validated = LicenseOptionsSchema.safeParse({
+          ...options,
+          logLevel: options.logLevel ?? (options.verbose ? 'debug' : undefined),
+          silent: options.silent ?? false,
+        });
         if (!validated.success) {
           console.error(chalk.red('❌ Invalid options:'), validated.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', '));
           process.exit(1);
         }
         const opts = validated.data;
+        // Apply logging preferences
+        const LoggerClass = (await import('../utils/logger')).Logger;
+        const instance = (LoggerClass as any).getInstance?.();
+        if (instance && opts.logLevel) instance.setLevel(opts.logLevel as any);
+        if (instance && opts.silent) instance.setLevel('silent' as any);
         console.log(chalk.blue('📜 Generating License Compliance Document'));
         console.log(chalk.gray('━'.repeat(50)));
         
