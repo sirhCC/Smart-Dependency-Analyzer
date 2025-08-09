@@ -91,7 +91,8 @@ export class IntelligentCache extends EventEmitter {
   private readonly stats: CacheStats;
   private currentMemoryUsage = 0;
   private redisClient?: any; // Redis client type
-  private maintenanceInterval?: NodeJS.Timeout;
+  private maintenanceInterval: NodeJS.Timeout | undefined;
+  private started = false;
 
   constructor(config: Partial<CacheConfig> = {}) {
     super();
@@ -475,22 +476,24 @@ export class IntelligentCache extends EventEmitter {
 
   private startMaintenanceTasks(): void {
     // Start periodic cleanup
+    if (this.maintenanceInterval) return;
     this.maintenanceInterval = setInterval(() => {
       this.runMaintenance();
     }, 60000); // Every minute
+    if (typeof this.maintenanceInterval.unref === 'function') this.maintenanceInterval.unref();
   }
 
   private runMaintenance(): void {
     // Remove expired entries
     let expiredCount = 0;
-    for (const [key, entry] of this.l1Cache.entries()) {
+    this.l1Cache.forEach((entry, key) => {
       if (this.isExpired(entry)) {
         this.l1Cache.delete(key);
         this.accessOrder.delete(key);
         this.currentMemoryUsage -= entry.size;
         expiredCount++;
       }
-    }
+    });
 
     if (expiredCount > 0) {
       logger.debug('Expired cache entries removed', { count: expiredCount });
@@ -514,6 +517,22 @@ export class IntelligentCache extends EventEmitter {
 
     this.l1Cache.clear();
     this.accessOrder.clear();
+  }
+
+  /** Start cache maintenance (idempotent) */
+  public start(): void {
+    if (this.started) return;
+    this.started = true;
+    this.startMaintenanceTasks();
+  }
+
+  /** Stop cache maintenance (idempotent) */
+  public stop(): void {
+    if (this.maintenanceInterval) {
+      clearInterval(this.maintenanceInterval);
+      this.maintenanceInterval = undefined;
+    }
+    this.started = false;
   }
 
   /**

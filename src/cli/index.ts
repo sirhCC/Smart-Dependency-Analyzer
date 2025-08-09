@@ -28,6 +28,7 @@ async function main(): Promise<void> {
     const { cacheManager } = await import('../core/performance/cache-manager');
     cacheManager.destroy();
   });
+  // Note: IntelligentCache & MemoryOptimizer are not singletons yet; registration deferred until instantiated.
   
   const program = new Command();
 
