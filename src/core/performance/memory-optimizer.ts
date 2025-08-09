@@ -35,7 +35,8 @@ export class MemoryOptimizer {
   private gcCount: number = 0;
   private leaksDetected: number = 0;
   private memoryHistory: number[] = [];
-  private gcTimer?: NodeJS.Timeout;
+  private gcTimer: NodeJS.Timeout | undefined;
+  private gcStrategyTimer: NodeJS.Timeout | undefined; // interval created by gcStrategy
 
   constructor() {
     this.config = {
@@ -60,6 +61,32 @@ export class MemoryOptimizer {
     this.configureGarbageCollection();
     
     logger.info(`💾 Memory optimizer configured: ${JSON.stringify(config)}`);
+  }
+
+  /**
+   * Start monitoring (idempotent)
+   */
+  public async start(): Promise<void> {
+    if (!this.gcTimer) {
+      await this.startMemoryMonitoring();
+    }
+    if (!this.gcStrategyTimer) {
+      this.configureGarbageCollection();
+    }
+  }
+
+  /**
+   * Stop all timers (idempotent)
+   */
+  public stop(): void {
+    if (this.gcTimer) {
+      clearInterval(this.gcTimer);
+      this.gcTimer = undefined;
+    }
+    if (this.gcStrategyTimer) {
+      clearInterval(this.gcStrategyTimer);
+      this.gcStrategyTimer = undefined;
+    }
   }
 
   /**
@@ -217,15 +244,21 @@ export class MemoryOptimizer {
     switch (this.config.gcStrategy) {
       case 'aggressive':
         // Force GC every 10 seconds
-        setInterval(() => this.forceGarbageCollection(), 10000);
+  if (this.gcStrategyTimer) clearInterval(this.gcStrategyTimer);
+  this.gcStrategyTimer = setInterval(() => this.forceGarbageCollection(), 10000) as unknown as NodeJS.Timeout;
         break;
       
       case 'balanced':
         // Force GC every 30 seconds
-        setInterval(() => this.forceGarbageCollection(), 30000);
+  if (this.gcStrategyTimer) clearInterval(this.gcStrategyTimer);
+  this.gcStrategyTimer = setInterval(() => this.forceGarbageCollection(), 30000) as unknown as NodeJS.Timeout;
         break;
       
       case 'conservative':
+        if (this.gcStrategyTimer) {
+          clearInterval(this.gcStrategyTimer);
+          this.gcStrategyTimer = undefined;
+        }
         // Let Node.js handle GC naturally
         break;
     }
@@ -269,9 +302,7 @@ export class MemoryOptimizer {
    * Cleanup resources
    */
   public cleanup(): void {
-    if (this.gcTimer) {
-      clearInterval(this.gcTimer);
-    }
+  this.stop();
     logger.info('💾 Memory optimizer cleaned up');
   }
 }
