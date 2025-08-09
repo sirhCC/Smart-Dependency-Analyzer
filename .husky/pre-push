@@ -1,0 +1,11 @@
+#!/bin/sh
+# Lightweight gate before pushing to remote.
+# Runs full typecheck and test suite (CI parity) to catch regressions early.
+
+echo "🚦 pre-push: running typecheck + tests"
+
+npm run typecheck || { echo "❌ Typecheck failed"; exit 1; }
+
+npm run test:ci || { echo "❌ Tests failed"; exit 1; }
+
+echo "✅ pre-push checks passed"

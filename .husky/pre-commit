@@ -1,17 +1,7 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+echo "🔍 Running pre-commit (fast checks)"
 
-echo "🔍 Running pre-commit checks..."
+# Lint & format only staged files (fast)
+npx lint-staged || {
+	echo "❌ lint-staged failed"; exit 1; }
 
-# Lint staged files
-npx lint-staged
-
-# Type check
-echo "🔧 Type checking..."
-npm run typecheck
-
-# Run tests
-echo "🧪 Running tests..."
-npm run test:ci
-
-echo "✅ Pre-commit checks passed!"
+echo "✅ Pre-commit checks passed"
