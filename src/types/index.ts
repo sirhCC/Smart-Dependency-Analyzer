@@ -539,6 +539,10 @@ export interface VulnerabilityScanOptions {
   readonly maxAge?: number; // days
   readonly ignoreIds?: string[];
   readonly onlyProduction?: boolean;
+  /**
+   * Maximum number of packages to scan concurrently. Defaults to internal scanner setting (10) if unset.
+   */
+  readonly maxConcurrentPackages?: number;
 }
 
 export interface VulnerabilityScanResult {

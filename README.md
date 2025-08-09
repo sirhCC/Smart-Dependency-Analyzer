@@ -65,6 +65,9 @@ Options:
   --risk                  include legal risk assessment (default: true)
   --save <file>           save full results to file
   --policy <file>         apply policy (yaml/json)
+  --max-concurrency <n>   limit parallel package scans (defaults to adaptive heuristic)
+  --log-level <level>     set log level (silent|fatal|error|warn|info|debug|trace)
+  --silent                suppress all logs (overrides log level)
 ```
 
 ### license

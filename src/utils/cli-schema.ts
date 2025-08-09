@@ -9,6 +9,7 @@ export const AnalyzeOptionsSchema = z.object({
   risk: z.boolean().default(true),
   policy: z.string().min(1).optional(),
   save: z.string().min(1).optional(),
+  maxConcurrency: z.preprocess((v) => (v === undefined ? undefined : Number(v)), z.number().int().positive().max(1000).optional()),
   logLevel: z.enum(['silent', 'fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
   silent: z.boolean().optional(),
 });
