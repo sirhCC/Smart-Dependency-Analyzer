@@ -7,10 +7,10 @@ This document lists concrete improvements by priority to enhance code quality, s
 - Harden background timers and lifecycle further
   - Rationale: We unref()’d timers to stop test leaks; production should also guarantee clean shutdowns.
   - Actions:
-    - [ ] Ensure every service with timers exposes `start()`/`stop()`
+  - [x] Ensure every service with timers exposes `start()`/`stop()` (added to MemoryOptimizer, IntelligentCache; CacheManager already has destroy())
     - [x] Call `stop()`/cleanup on process signals (SIGINT/SIGTERM) in CLI
     - [x] Add a lightweight lifecycle orchestrator to tear down `AIEngine`, `CacheManager`, network clients, and file handles
-    - [ ] Add an automated Jest test with `--detectOpenHandles` to guard against regressions
+  - [x] Add an automated Jest test with `--detectOpenHandles` to guard against regressions (`lifecycle.test.ts` + `npm run test:detect`)
 
 - Input validation and config schema
   - Rationale: Enterprise security model requires strict user input/config parsing.
