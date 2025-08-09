@@ -18,3 +18,16 @@ maxSeverity: high
 # If true, SDA will exit with non-zero code when violations are found
 # Useful for CI to fail builds on policy violations
 failOnPolicyViolation: true
+
+# Publisher policy (optional)
+# When enabled, packages must have a known publisher (author/maintainer).
+# If allow lists are provided, the publisher must match one of them.
+requireKnownPublisher: true
+allowedPublisherNames:
+  - 'Microsoft'
+  - 'Google'
+  - 'Meta'
+allowedPublisherDomains:
+  - 'microsoft.com'
+  - 'google.com'
+  - 'meta.com'
