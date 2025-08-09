@@ -8,7 +8,7 @@ import { createWriteStream } from 'fs';
 import { join } from 'path';
 
 export interface LoggerConfig {
-  level: pino.Level;
+  level: pino.LevelWithSilent;
   enableConsole: boolean;
   enableFile: boolean;
   logDirectory: string;
@@ -22,7 +22,7 @@ export class Logger {
 
   private constructor(config: Partial<LoggerConfig> = {}) {
     this.config = {
-      level: (process.env.LOG_LEVEL as pino.Level) || 'info',
+  level: (process.env.LOG_LEVEL as pino.LevelWithSilent) || 'info',
       enableConsole: true,
       enableFile: false,
       logDirectory: './logs',
@@ -49,9 +49,9 @@ export class Logger {
     const streams: pino.StreamEntry[] = [];
 
     // Console transport
-    if (this.config.enableConsole) {
+  if (this.config.enableConsole) {
       streams.push({
-        level: this.config.level,
+    level: this.config.level === 'silent' ? 'fatal' : this.config.level,
         stream: this.config.prettyPrint
           ? pino.destination(1) // stdout with pretty printing
           : process.stdout,
@@ -59,10 +59,10 @@ export class Logger {
     }
 
     // File transport
-    if (this.config.enableFile) {
+  if (this.config.enableFile) {
       const logFile = join(this.config.logDirectory, 'sda.log');
       streams.push({
-        level: this.config.level,
+    level: this.config.level === 'silent' ? 'fatal' : this.config.level,
         stream: createWriteStream(logFile, { flags: 'a' }),
       });
     }
@@ -96,6 +96,15 @@ export class Logger {
 
   public child(bindings: Record<string, unknown>): pino.Logger {
     return this.logger.child(bindings);
+  }
+
+  // Allow dynamic updates of log level (supports 'silent')
+  public setLevel(level: pino.LevelWithSilent): void {
+    this.config.level = level;
+    // pino provides a setter on the logger instance
+    // Children inherit updated level automatically
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this.logger as any).level = level;
   }
 }
 
