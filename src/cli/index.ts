@@ -15,6 +15,7 @@ import { createGitHubAdvisoryDataSource } from '../integrations/security/github-
 import { createLicenseIntelligenceService } from '../core/services/license-intelligence';
 import { lifecycle } from '../utils/lifecycle';
 import { loadPolicy, evaluatePolicy, Policy } from '../utils/policy';
+import { AnalyzeOptionsSchema, LicenseOptionsSchema } from '../utils/cli-schema';
 
 const logger = Logger.getLogger('CLI');
 
@@ -59,6 +60,13 @@ async function main(): Promise<void> {
     .option('--save <file>', 'Save results to file')
     .action(async (projectPath: string, options) => {
       try {
+        // Validate CLI options (analyze)
+        const validated = AnalyzeOptionsSchema.safeParse(options);
+        if (!validated.success) {
+          console.error(chalk.red('❌ Invalid options:'), validated.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', '));
+          process.exit(1);
+        }
+        const opts = validated.data;
         const startTime = Date.now();
         logger.info(`🔍 Starting comprehensive analysis: ${projectPath}`);
         
@@ -70,7 +78,7 @@ async function main(): Promise<void> {
         console.log(chalk.cyan('\n📦 Phase 1: Package Discovery'));
   const packageDiscovery = createPackageDiscoveryService();
         const discoveryResult = await packageDiscovery.discoverPackages(projectPath, {
-          includeDev: options.includeDev
+          includeDev: opts.includeDev
         });
         
         console.log(chalk.green(`✅ Discovered ${discoveryResult.packages.length} packages`));
@@ -88,7 +96,7 @@ async function main(): Promise<void> {
         const vulnerabilityResults = await vulnerabilityScanner.scanPackages(
           discoveryResult.packages,
           {
-            includeDevDependencies: options.includeDev
+            includeDevDependencies: opts.includeDev
           }
         );
         
@@ -106,13 +114,13 @@ async function main(): Promise<void> {
         let riskReport = null;
 
         // Phase 3: License Intelligence
-        if (options.licenses) {
+  if (opts.licenses) {
           console.log(chalk.cyan('\n📜 Phase 3: License Intelligence'));
           const licenseService = createLicenseIntelligenceService();
           
           const licenseOptions = {
             scanDepth: 'direct' as const,
-            includeDevDependencies: options.includeDev,
+            includeDevDependencies: opts.includeDev,
             scanPatterns: ['LICENSE*', 'COPYING*', 'COPYRIGHT*', '*.md'],
             ignorePatterns: ['node_modules/**', 'dist/**', 'build/**'],
             confidenceThreshold: 0.7,
@@ -142,7 +150,7 @@ async function main(): Promise<void> {
           console.log(`   ⚖️  Risk: Critical(${riskLevels.critical}) High(${riskLevels.high}) Medium(${riskLevels.medium}) Low(${riskLevels.low})`);
           
           // License Compatibility Analysis
-          if (options.compatibility) {
+          if (opts.compatibility) {
             console.log('   🔗 Analyzing compatibility...');
             compatibilityReport = await licenseService.generateCompatibilityReport(
               discoveryResult.packages,
@@ -156,7 +164,7 @@ async function main(): Promise<void> {
           }
           
           // Legal Risk Assessment
-          if (options.risk) {
+          if (opts.risk) {
             console.log('   ⚖️  Assessing legal risks...');
             riskReport = await licenseService.assessLegalRisk(
               discoveryResult.packages,
@@ -230,9 +238,9 @@ async function main(): Promise<void> {
 
         // Policy evaluation (optional)
         let policy: Policy | undefined;
-        if (options.policy) {
+    if (opts.policy) {
           try {
-            policy = await loadPolicy(options.policy);
+      policy = await loadPolicy(opts.policy);
             const policyResult = evaluatePolicy(policy, {
               vulnerabilityResults,
               licenseAnalyses: licenseResults ?? null,
@@ -256,7 +264,7 @@ async function main(): Promise<void> {
         console.log(chalk.green(`\n✅ Analysis completed in ${totalTime}ms`));
         
         // Save results if requested
-  if (options.save) {
+  if (opts.save) {
           const outputData = {
             timestamp: new Date().toISOString(),
             packages: discoveryResult,
@@ -267,8 +275,8 @@ async function main(): Promise<void> {
           };
           
           const fs = await import('fs/promises');
-          await fs.writeFile(options.save, JSON.stringify(outputData, null, 2));
-          console.log(chalk.green(`📄 Results saved to: ${options.save}`));
+          await fs.writeFile(opts.save, JSON.stringify(outputData, null, 2));
+          console.log(chalk.green(`📄 Results saved to: ${opts.save}`));
         }
 
       } catch (error) {
@@ -290,6 +298,13 @@ async function main(): Promise<void> {
     .option('--include-texts', 'Include full license texts', false)
     .action(async (projectPath: string, options) => {
       try {
+        // Validate CLI options (license)
+        const validated = LicenseOptionsSchema.safeParse(options);
+        if (!validated.success) {
+          console.error(chalk.red('❌ Invalid options:'), validated.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', '));
+          process.exit(1);
+        }
+        const opts = validated.data;
         console.log(chalk.blue('📜 Generating License Compliance Document'));
         console.log(chalk.gray('━'.repeat(50)));
         
@@ -302,18 +317,18 @@ async function main(): Promise<void> {
         const document = await licenseService.generateComplianceDocument(
           discoveryResult.packages,
           {
-            format: options.format as any,
-            includeLicenseTexts: options.includeTexts,
+            format: opts.format as any,
+            includeLicenseTexts: opts.includeTexts,
             includeCopyrightNotices: true,
             includeSourceReferences: true,
-            groupByLicense: options.groupByLicense
+            groupByLicense: opts.groupByLicense
           }
         );
         
-        if (options.output) {
+        if (opts.output) {
           const fs = await import('fs/promises');
-          await fs.writeFile(options.output, document);
-          console.log(chalk.green(`✅ License document saved to: ${options.output}`));
+          await fs.writeFile(opts.output, document);
+          console.log(chalk.green(`✅ License document saved to: ${opts.output}`));
         } else {
           console.log(document);
         }
