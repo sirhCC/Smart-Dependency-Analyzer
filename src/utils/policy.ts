@@ -15,6 +15,9 @@ export const PolicySchema = z.object({
   disallowedLicenses: z.array(z.string()).optional().default([]),
   maxSeverity: z.enum(SeverityLevels).optional().default('critical'),
   failOnPolicyViolation: z.boolean().optional().default(false),
+  requireKnownPublisher: z.boolean().optional().default(false),
+  allowedPublisherNames: z.array(z.string()).optional().default([]),
+  allowedPublisherDomains: z.array(z.string()).optional().default([]),
 });
 
 export type Policy = z.infer<typeof PolicySchema>;
@@ -85,6 +88,48 @@ export function evaluatePolicy(
       const sev = (v.severity as Severity) ?? 'low';
       if (severityRank[sev] > maxAllowed) {
         violations.push(`Vulnerability ${v.id ?? v.cveId ?? 'unknown'} severity ${sev} exceeds max ${policy.maxSeverity}`);
+      }
+    }
+  }
+
+  // Publisher policy (based on package metadata present in vulnerability scan reports)
+  if (policy.requireKnownPublisher && vres && vres.reports && vres.reports.length > 0) {
+    const allowNames = new Set(policy.allowedPublisherNames.map((s) => s.toLowerCase()));
+    const allowDomains = new Set(policy.allowedPublisherDomains.map((s) => s.toLowerCase()));
+
+    for (const report of vres.reports) {
+      const pkg = report.package;
+      const publishers: Array<{ name?: string; email?: string }> = [];
+      const author = (pkg as any).author as { name?: string; email?: string } | undefined;
+      const maintainers = (pkg as any).maintainers as Array<{ name?: string; email?: string }> | undefined;
+      if (author) {
+        const entry: { name?: string; email?: string } = {};
+        if (author.name) entry.name = author.name;
+        if (author.email) entry.email = author.email;
+        if (Object.keys(entry).length > 0) publishers.push(entry);
+      }
+      if (Array.isArray(maintainers)) {
+        for (const m of maintainers) {
+          const entry: { name?: string; email?: string } = {};
+          if (m.name) entry.name = m.name;
+          if (m.email) entry.email = m.email;
+          if (Object.keys(entry).length > 0) publishers.push(entry);
+        }
+      }
+
+      const hasAnyPublisher = publishers.length > 0;
+      const matchesAllowed = publishers.some((p) => {
+        const n = (p.name || '').toLowerCase();
+        const e = (p.email || '').toLowerCase();
+  const domain = e.includes('@') ? (e.split('@')[1] ?? '') : '';
+        return (allowNames.size > 0 && allowNames.has(n)) || (allowDomains.size > 0 && allowDomains.has(domain));
+      });
+
+      const ok = (allowNames.size > 0 || allowDomains.size > 0) ? matchesAllowed : hasAnyPublisher;
+      if (!ok) {
+        violations.push(
+          `Unknown or unapproved publisher for ${pkg.name}@${pkg.version} (no matching author/maintainer)`
+        );
       }
     }
   }
