@@ -15,6 +15,7 @@
     "test:watch": "jest --config config/jest.config.js --watch",
     "test:coverage": "jest --config config/jest.config.js --coverage",
     "test:ci": "jest --config config/jest.config.js --ci --coverage --watchAll=false",
+  "test:detect": "jest --config config/jest.config.js --detectOpenHandles --forceExit",
     "lint": "eslint src/**/*.ts --config config/eslint.config.js",
     "lint:fix": "eslint src/**/*.ts --config config/eslint.config.js --fix",
     "format": "prettier --write src/**/*.ts --config config/.prettierrc.js",
