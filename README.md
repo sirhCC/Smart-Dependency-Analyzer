@@ -83,7 +83,7 @@ Options:
 
 ## Policy Enforcement
 
-Enforce organizational rules during analysis: disallow specific licenses and cap vulnerability severity.
+Enforce organizational rules during analysis: disallow specific licenses, cap vulnerability severity, and restrict publishers.
 
 Example (see `config/policy.example.yaml`):
 
@@ -93,6 +93,11 @@ disallowedLicenses:
   - AGPL-3.0-only
 maxSeverity: high
 failOnPolicyViolation: true
+requireKnownPublisher: true
+allowedPublisherNames:
+  - Microsoft
+allowedPublisherDomains:
+  - microsoft.com
 ```
 
 Run with a policy:
