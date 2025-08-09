@@ -9,6 +9,8 @@ export const AnalyzeOptionsSchema = z.object({
   risk: z.boolean().default(true),
   policy: z.string().min(1).optional(),
   save: z.string().min(1).optional(),
+  logLevel: z.enum(['silent', 'fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
+  silent: z.boolean().optional(),
 });
 
 export type AnalyzeOptions = z.infer<typeof AnalyzeOptionsSchema>;
@@ -18,6 +20,8 @@ export const LicenseOptionsSchema = z.object({
   output: z.string().min(1).optional(),
   groupByLicense: z.boolean().default(false),
   includeTexts: z.boolean().default(false),
+  logLevel: z.enum(['silent', 'fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
+  silent: z.boolean().optional(),
 });
 
 export type LicenseOptions = z.infer<typeof LicenseOptionsSchema>;
