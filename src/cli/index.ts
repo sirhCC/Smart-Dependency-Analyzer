@@ -58,6 +58,7 @@ async function main(): Promise<void> {
     .option('--licenses', 'Include license analysis', true)
     .option('--compatibility', 'Include license compatibility analysis', true)
     .option('--risk', 'Include legal risk assessment', true)
+  .option('--max-concurrency <n>', 'Maximum packages scanned concurrently (default 10)', undefined)
   .option('--policy <file>', 'Path to policy (json|yaml) to enforce', undefined)
     .option('--save <file>', 'Save results to file')
     .action(async (projectPath: string, options) => {
@@ -67,6 +68,7 @@ async function main(): Promise<void> {
           ...options,
           logLevel: options.logLevel ?? (options.verbose ? 'debug' : undefined),
           silent: options.silent ?? false,
+      maxConcurrency: options.maxConcurrency,
         });
         if (!validated.success) {
           console.error(chalk.red('❌ Invalid options:'), validated.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', '));
@@ -107,7 +109,8 @@ async function main(): Promise<void> {
         const vulnerabilityResults = await vulnerabilityScanner.scanPackages(
           discoveryResult.packages,
           {
-            includeDevDependencies: opts.includeDev
+            includeDevDependencies: opts.includeDev,
+            ...(typeof opts.maxConcurrency === 'number' ? { maxConcurrentPackages: opts.maxConcurrency } : {})
           }
         );
         
