@@ -30,7 +30,7 @@ This document lists concrete improvements by priority to enhance code quality, s
   - Actions:
     - [x] Add policy module to fail/flag on disallowed licenses
     - [x] Enforce vulnerable severities over threshold
-    - [ ] Flag unknown publishers
+  - [x] Flag unknown publishers
     - [x] Add `--policy <file>` CLI flag; load YAML/JSON policy and validate findings
 
 ## P1 – Performance and scalability
