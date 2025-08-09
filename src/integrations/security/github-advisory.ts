@@ -4,6 +4,7 @@
  */
 
 import { getLogger } from '../../utils/logger';
+import { CircuitOpenError, normalizeHttpError } from '../../utils/errors';
 import { VulnerabilitySeverity } from '../../types';
 import type { 
   Package, 
@@ -26,9 +27,17 @@ export class GitHubAdvisoryDataSource implements SecurityDataSource {
   private readonly baseUrl = 'https://api.github.com/advisories';
   private readonly apiTimeout = 10000; // 10 seconds
   private readonly rateLimitDelay = 100; // 100ms between requests
+  private readonly maxRetries = 3;
+  private readonly initialBackoffMs = 250;
+  private readonly maxBackoffMs = 2000;
+  private readonly failureThreshold = 5; // open breaker after N consecutive failures
+  private readonly cooldownMs = 30_000; // 30s before half-open
 
   private lastRequestTime = 0;
   private requestCount = 0;
+  private consecutiveFailures = 0;
+  private breakerState: 'closed' | 'open' | 'half-open' = 'closed';
+  private nextAttemptAfter = 0;
 
   constructor(private readonly options: {
     token?: string;
@@ -42,7 +51,7 @@ export class GitHubAdvisoryDataSource implements SecurityDataSource {
    */
   async isAvailable(): Promise<boolean> {
     try {
-      const response = await this.makeRequest(`${this.baseUrl}?per_page=1`);
+  const response = await this.makeRequest(`${this.baseUrl}?per_page=1`);
       return response.ok;
     } catch (error) {
       logger.warn('GitHub Advisory API is not available:', error);
@@ -54,7 +63,8 @@ export class GitHubAdvisoryDataSource implements SecurityDataSource {
    * Get vulnerabilities for a specific package
    */
   async getVulnerabilities(pkg: Package): Promise<Vulnerability[]> {
-    logger.debug(`🔍 Fetching vulnerabilities for ${pkg.name} from GitHub Advisory API`);
+  const reqId = Math.random().toString(36).slice(2, 10);
+  logger.debug({ reqId, pkg: pkg.name }, `🔍 Fetching vulnerabilities from GitHub Advisory API`);
     
     try {
       await this.respectRateLimit();
@@ -66,10 +76,11 @@ export class GitHubAdvisoryDataSource implements SecurityDataSource {
         per_page: '100'
       });
 
-      const response = await this.makeRequest(`${this.baseUrl}?${searchParams}`);
+      const url = `${this.baseUrl}?${searchParams}`;
+      const response = await this.makeRequest(url);
       
       if (!response.ok) {
-        throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+        throw normalizeHttpError(response, url);
       }
 
       const advisories = await response.json() as any[];
@@ -82,14 +93,18 @@ export class GitHubAdvisoryDataSource implements SecurityDataSource {
             vulnerabilities.push(vulnerability);
           }
         } catch (error) {
-          logger.warn(`Failed to process advisory ${advisory.ghsa_id}:`, error);
+          logger.warn({ reqId, advisory: advisory?.ghsa_id, err: String(error) }, 'Failed to process advisory');
         }
       }
 
-      logger.info(`✅ Found ${vulnerabilities.length} vulnerabilities for ${pkg.name} from GitHub Advisory`);
+      logger.info({ reqId, count: vulnerabilities.length, pkg: pkg.name }, '✅ GitHub Advisory vulnerabilities found');
       return vulnerabilities;
     } catch (error) {
-      logger.error(`Failed to fetch vulnerabilities for ${pkg.name}:`, error);
+      if (error instanceof CircuitOpenError) {
+        logger.error({ pkg: pkg.name, err: error.message }, 'Circuit breaker open; skipping GitHub Advisory');
+      } else {
+        logger.error({ pkg: pkg.name, err: String(error) }, 'Failed to fetch vulnerabilities from GitHub Advisory');
+      }
       return [];
     }
   }
@@ -197,6 +212,11 @@ export class GitHubAdvisoryDataSource implements SecurityDataSource {
    * Make HTTP request with proper headers and error handling
    */
   private async makeRequest(url: string): Promise<Response> {
+    // Circuit breaker guard
+    if (!this.canAttempt()) {
+      throw new CircuitOpenError();
+    }
+
     const headers: Record<string, string> = {
       'Accept': 'application/vnd.github+json',
       'User-Agent': 'Smart-Dependency-Analyzer/1.0.0'
@@ -207,26 +227,59 @@ export class GitHubAdvisoryDataSource implements SecurityDataSource {
       headers['Authorization'] = `Bearer ${this.options.token}`;
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.apiTimeout);
+    let attempt = 0;
+    let lastError: unknown = undefined;
 
-    try {
-      this.requestCount++;
-      const response = await fetch(url, {
-        headers,
-        signal: controller.signal
-      });
+    while (attempt <= this.maxRetries) {
+      await this.respectRateLimit();
 
-      // Check rate limiting
-      const remaining = response.headers.get('X-RateLimit-Remaining');
-      if (remaining && parseInt(remaining) < 10) {
-        logger.warn(`GitHub API rate limit low: ${remaining} requests remaining`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.apiTimeout);
+      try {
+        this.requestCount++;
+        const response = await fetch(url, { headers, signal: controller.signal });
+
+        // Check rate limiting
+        const remaining = response.headers.get('X-RateLimit-Remaining');
+        if (remaining && parseInt(remaining) < 10) {
+          logger.warn(`GitHub API rate limit low: ${remaining} requests remaining`);
+        }
+
+        if (response.ok) {
+          this.onSuccess();
+          return response;
+        }
+
+        // Retry for transient errors
+        const retryableStatuses = new Set([429, 500, 502, 503, 504]);
+        if (!retryableStatuses.has(response.status) || attempt === this.maxRetries) {
+          this.onFailure();
+          return response; // let caller decide; not retrying further
+        }
+
+        this.onFailure();
+        const retryAfter = response.headers.get('retry-after');
+        const parsedRetryAfter = retryAfter ? parseInt(retryAfter, 10) * 1000 : undefined;
+        const backoff = parsedRetryAfter ?? this.computeBackoff(attempt);
+        logger.warn(`GitHub API ${response.status}; retrying in ${backoff}ms (attempt ${attempt + 1}/${this.maxRetries})`);
+        await this.delay(backoff);
+      } catch (err) {
+        lastError = err;
+        this.onFailure();
+        if (attempt === this.maxRetries) {
+          clearTimeout(timeoutId);
+          throw err;
+        }
+        const backoff = this.computeBackoff(attempt);
+        logger.warn(`GitHub request failed; retrying in ${backoff}ms (attempt ${attempt + 1}/${this.maxRetries})`, err);
+        await this.delay(backoff);
+      } finally {
+        clearTimeout(timeoutId);
       }
-
-      return response;
-    } finally {
-      clearTimeout(timeoutId);
+      attempt++;
     }
+    // Exhausted retries
+    throw lastError ?? new Error('GitHub request failed after retries');
   }
 
   /**
@@ -257,6 +310,44 @@ export class GitHubAdvisoryDataSource implements SecurityDataSource {
       lastRequestTime: this.lastRequestTime,
       rateLimitDelay: this.rateLimitDelay
     };
+  }
+
+  // ---- Circuit breaker & retry helpers ----
+  private canAttempt(): boolean {
+    if (this.breakerState === 'open') {
+      if (Date.now() >= this.nextAttemptAfter) {
+        this.breakerState = 'half-open';
+        return true;
+      }
+      return false;
+    }
+    return true;
+  }
+
+  private onSuccess(): void {
+    this.consecutiveFailures = 0;
+    if (this.breakerState !== 'closed') {
+      this.breakerState = 'closed';
+    }
+  }
+
+  private onFailure(): void {
+    this.consecutiveFailures++;
+    if (this.consecutiveFailures >= this.failureThreshold && this.breakerState !== 'open') {
+      this.breakerState = 'open';
+      this.nextAttemptAfter = Date.now() + this.cooldownMs;
+      logger.error(`Circuit breaker opened after ${this.consecutiveFailures} consecutive failures; cooling down for ${this.cooldownMs}ms`);
+    }
+  }
+
+  private computeBackoff(attempt: number): number {
+    const exp = Math.min(this.initialBackoffMs * Math.pow(2, attempt), this.maxBackoffMs);
+    const jitter = Math.floor(Math.random() * 100);
+    return exp + jitter;
+  }
+
+  private async delay(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
