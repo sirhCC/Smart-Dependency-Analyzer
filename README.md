@@ -168,6 +168,17 @@ Quality gates:
 
 ---
 
+### Automated dependency updates
+
+This repo uses Dependabot to keep dependencies current:
+
+- npm packages (root `package.json`)
+- GitHub Actions workflows
+
+Configuration: `.github/dependabot.yml` (weekly on Mondays, grouped updates, conventional `chore` commits).
+
+---
+
 ## License
 
 MIT © Chris (@sirhCC)
