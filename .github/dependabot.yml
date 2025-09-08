@@ -1,0 +1,92 @@
+version: 2
+updates:
+  # Keep npm dependencies up to date
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    rebase-strategy: "auto"
+    labels:
+      - "dependencies"
+      - "npm"
+    allow:
+      - dependency-type: "all"
+    commit-message:
+      prefix: "chore"
+      include: "scope" # produces messages like: chore(npm): bump ...
+    groups:
+      eslint:
+        applies-to: "version-updates"
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@typescript-eslint/*"
+        update-types:
+          - "minor"
+          - "patch"
+      types:
+        applies-to: "version-updates"
+        patterns:
+          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+      jest:
+        applies-to: "version-updates"
+        patterns:
+          - "jest"
+          - "ts-jest"
+          - "@types/jest"
+        update-types:
+          - "minor"
+          - "patch"
+      typescript-build:
+        applies-to: "version-updates"
+        patterns:
+          - "typescript"
+          - "ts-node"
+          - "tslib"
+        update-types:
+          - "minor"
+          - "patch"
+      tooling:
+        applies-to: "version-updates"
+        patterns:
+          - "rimraf"
+          - "cross-env"
+          - "husky"
+          - "lint-staged"
+          - "prettier"
+          - "tsup"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Keep GitHub Actions up to date
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    rebase-strategy: "auto"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      actions-minor-patch:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
