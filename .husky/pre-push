@@ -4,6 +4,12 @@
 
 echo "🚦 pre-push: running typecheck + tests"
 
+# Optional bypass for local pushes. Set SKIP_PRE_PUSH=1 to skip these checks.
+if [ "${SKIP_PRE_PUSH}" = "1" ] || [ "${SKIP_PRE_PUSH}" = "true" ]; then
+	echo "⚠️  SKIP_PRE_PUSH set — skipping pre-push checks"
+	exit 0
+fi
+
 npm run typecheck || { echo "❌ Typecheck failed"; exit 1; }
 
 npm run test:ci || { echo "❌ Tests failed"; exit 1; }
