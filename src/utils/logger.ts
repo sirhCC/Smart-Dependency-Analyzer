@@ -3,9 +3,9 @@
  * High-performance structured logging with multiple transports
  */
 
-import pino from 'pino';
-import { createWriteStream } from 'fs';
-import { join } from 'path';
+import pino from "pino";
+import { createWriteStream } from "fs";
+import { join } from "path";
 
 export interface LoggerConfig {
   level: pino.LevelWithSilent;
@@ -22,11 +22,11 @@ export class Logger {
 
   private constructor(config: Partial<LoggerConfig> = {}) {
     this.config = {
-  level: (process.env.LOG_LEVEL as pino.LevelWithSilent) || 'info',
+      level: (process.env.LOG_LEVEL as pino.LevelWithSilent) || "info",
       enableConsole: true,
       enableFile: false,
-      logDirectory: './logs',
-      prettyPrint: process.env.NODE_ENV !== 'production',
+      logDirectory: "./logs",
+      prettyPrint: process.env.NODE_ENV !== "production",
       ...config,
     };
 
@@ -48,10 +48,10 @@ export class Logger {
   private createLogger(): pino.Logger {
     const streams: pino.StreamEntry[] = [];
 
-    // Console transport
-  if (this.config.enableConsole) {
+    // Console transport (skip if silent mode)
+    if (this.config.enableConsole && this.config.level !== "silent") {
       streams.push({
-    level: this.config.level === 'silent' ? 'fatal' : this.config.level,
+        level: this.config.level,
         stream: this.config.prettyPrint
           ? pino.destination(1) // stdout with pretty printing
           : process.stdout,
@@ -59,17 +59,17 @@ export class Logger {
     }
 
     // File transport
-  if (this.config.enableFile) {
-      const logFile = join(this.config.logDirectory, 'sda.log');
+    if (this.config.enableFile) {
+      const logFile = join(this.config.logDirectory, "sda.log");
       streams.push({
-    level: this.config.level === 'silent' ? 'fatal' : this.config.level,
-        stream: createWriteStream(logFile, { flags: 'a' }),
+        level: this.config.level === "silent" ? "fatal" : this.config.level,
+        stream: createWriteStream(logFile, { flags: "a" }),
       });
     }
 
     const logger = pino(
       {
-        name: 'sda',
+        name: "sda",
         level: this.config.level,
         formatters: {
           level: (label) => ({ level: label }),
@@ -81,10 +81,10 @@ export class Logger {
         timestamp: pino.stdTimeFunctions.isoTime,
         base: {
           pid: process.pid,
-          hostname: require('os').hostname(),
+          hostname: require("os").hostname(),
         },
       },
-      pino.multistream(streams)
+      pino.multistream(streams),
     );
 
     return logger;
@@ -100,11 +100,17 @@ export class Logger {
 
   // Allow dynamic updates of log level (supports 'silent')
   public setLevel(level: pino.LevelWithSilent): void {
+    const oldLevel = this.config.level;
     this.config.level = level;
-    // pino provides a setter on the logger instance
-    // Children inherit updated level automatically
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.logger as any).level = level;
+
+    // If switching to/from silent mode, recreate logger to adjust streams
+    if ((oldLevel === "silent") !== (level === "silent")) {
+      this.logger = this.createLogger();
+    } else {
+      // pino provides a setter on the logger instance
+      // Children inherit updated level automatically
+      (this.logger as any).level = level;
+    }
   }
 }
 
