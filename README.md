@@ -5,7 +5,7 @@
 ![Node](https://img.shields.io/badge/Node-%E2%89%A518-green)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-AI-powered dependency security, license intelligence, and blazing-fast analysisâ€”built for enterprise scale.
+Enterprise-grade dependency security analysis with advanced pattern-based threat detection, license intelligence, and blazing-fast performance.
 
 - 94%+ attack vector coverage across 12 categories
 - Sub-100ms core operations, optimized for 10k+ packages
@@ -15,7 +15,7 @@ AI-powered dependency security, license intelligence, and blazing-fast analysisâ
 
 ## Features
 
-- AI Security Intelligence: Unicode homographs, supply chain injection, brand jacking, typosquatting, and more
+- Advanced Security Analysis: 12+ attack vector detection including unicode homographs, supply chain injection, brand jacking, typosquatting, and more
 - Vulnerability scanning: Multi-source aggregation with risk scoring and recommendations
 - License Intelligence: SPDX detection, compatibility analysis, legal risk assessment, compliance docs
 - Performance: Intelligent caching, parallel processing, optimized graph analysis
