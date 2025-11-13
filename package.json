@@ -1,7 +1,7 @@
 {
   "name": "@sirhcc/smart-dependency-analyzer",
   "version": "1.0.0",
-  "description": "The world's most advanced dependency analysis platform with AI-powered security intelligence",
+  "description": "Enterprise-grade dependency analysis platform with advanced pattern-based security intelligence and license compliance",
   "main": "dist/index.js",
   "bin": {
     "sda": "dist/cli/index.js"
@@ -15,7 +15,7 @@
     "test:watch": "jest --config config/jest.config.js --watch",
     "test:coverage": "jest --config config/jest.config.js --coverage",
     "test:ci": "jest --config config/jest.config.js --ci --coverage --watchAll=false",
-  "test:detect": "jest --config config/jest.config.js --detectOpenHandles --forceExit",
+    "test:detect": "jest --config config/jest.config.js --detectOpenHandles --forceExit",
     "lint": "eslint src/**/*.ts --config config/eslint.config.js",
     "lint:fix": "eslint src/**/*.ts --config config/eslint.config.js --fix",
     "format": "prettier --write src/**/*.ts --config config/.prettierrc.js",
